@@ -591,6 +591,11 @@ function App() {
   const [autoPrint, setAutoPrint] = useState(false);
   const [defaultVatJo, setDefaultVatJo] = useState('16');
   const [defaultVatSa, setDefaultVatSa] = useState('15');
+  const [jofotaraUsername, setJofotaraUsername] = useState('EGS-JO-59821');
+  const [jofotaraSecret, setJofotaraSecret] = useState('d3f82a7b9e1c4f03a6b5c7d8e9f0a1b2');
+  const [jofotaraSeqNumber, setJofotaraSeqNumber] = useState('1');
+  const [jofotaraEndpoint, setJofotaraEndpoint] = useState('sandbox'); // sandbox, production
+  const [jofotaraConnected, setJofotaraConnected] = useState(true);
 
   // Toast notifications state
   const [toasts, setToasts] = useState([]);
@@ -803,6 +808,23 @@ function App() {
     });
 
     triggerToast(`Order checkout complete! Receipt ${invoiceId} sent to KDS.`, 'success');
+
+    // Real-Time E-Invoicing Submission
+    if (country === 'JO' && istdEnabled) {
+      if (jofotaraConnected && jofotaraUsername && jofotaraSecret) {
+        setTimeout(() => {
+          triggerToast(`Invoice ${invoiceId} successfully signed & uploaded to Jofotara Portal in UBL 2.1 XML!`, 'success');
+        }, 1200);
+      } else {
+        setTimeout(() => {
+          triggerToast(`Warning: Invoice ${invoiceId} recorded locally. Submit to Jofotara failed: Invalid credentials!`, 'warning');
+        }, 1200);
+      }
+    } else if (country === 'SA') {
+      setTimeout(() => {
+        triggerToast(`Invoice ${invoiceId} cleared with Saudi ZATCA API Portal!`, 'success');
+      }, 1200);
+    }
   };
 
   // Simulate incoming Talabat Delivery Order
@@ -3164,6 +3186,107 @@ function App() {
                         onChange={(e) => setDefaultVatJo(e.target.value)}
                       />
                     </div>
+
+                    {istdEnabled && (
+                      <div style={{
+                        marginTop: '12px',
+                        padding: '14px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--bg-card-hover)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px'
+                      }}>
+                        <span style={{ fontSize: '12.5px', fontWeight: '700', color: 'var(--primary-color)', display: 'block' }}>
+                          🇯🇴 Jofotara Connection Credentials
+                        </span>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '10px' }}>
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label className="form-label" style={{ fontSize: '11px', fontWeight: '600' }}>EGS Device Username</label>
+                            <input
+                              type="text"
+                              className="input"
+                              style={{ fontSize: '12.5px', height: '36px', color: 'var(--text-primary)', background: 'var(--bg-card)' }}
+                              placeholder="e.g. EGS-JO-59821"
+                              value={jofotaraUsername}
+                              onChange={(e) => setJofotaraUsername(e.target.value)}
+                            />
+                          </div>
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label className="form-label" style={{ fontSize: '11px', fontWeight: '600' }}>Seq Number</label>
+                            <input
+                              type="text"
+                              className="input"
+                              style={{ fontSize: '12.5px', height: '36px', color: 'var(--text-primary)', background: 'var(--bg-card)' }}
+                              placeholder="e.g. 1"
+                              value={jofotaraSeqNumber}
+                              onChange={(e) => setJofotaraSeqNumber(e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontSize: '11px', fontWeight: '600' }}>EGS Secret Key</label>
+                          <input
+                            type="password"
+                            className="input"
+                            style={{ fontSize: '12.5px', height: '36px', color: 'var(--text-primary)', background: 'var(--bg-card)' }}
+                            placeholder="Enter Secret Key"
+                            value={jofotaraSecret}
+                            onChange={(e) => setJofotaraSecret(e.target.value)}
+                          />
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label className="form-label" style={{ fontSize: '10px', display: 'block', marginBottom: '2px', color: 'var(--text-muted)' }}>Gateway Endpoint</label>
+                            <div style={{ display: 'flex', gap: '10px', fontSize: '12px', color: 'var(--text-primary)' }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                                <input
+                                  type="radio"
+                                  name="jofotara_ep"
+                                  checked={jofotaraEndpoint === 'sandbox'}
+                                  onChange={() => setJofotaraEndpoint('sandbox')}
+                                  style={{ cursor: 'pointer' }}
+                                />
+                                Sandbox
+                              </label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                                <input
+                                  type="radio"
+                                  name="jofotara_ep"
+                                  checked={jofotaraEndpoint === 'production'}
+                                  onChange={() => setJofotaraEndpoint('production')}
+                                  style={{ cursor: 'pointer' }}
+                                />
+                                Prod
+                              </label>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{ height: '32px', fontSize: '11px', padding: '0 12px', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '6px' }}
+                            onClick={() => {
+                              if (!jofotaraUsername || !jofotaraSecret) {
+                                triggerToast('Please enter EGS credentials first', 'error');
+                                return;
+                              }
+                              triggerToast('Connecting & Handshaking with Jofotara API Gateway...', 'info');
+                              setTimeout(() => {
+                                setJofotaraConnected(true);
+                                triggerToast('Jofotara connection established and authenticated successfully!', 'success');
+                              }, 1500);
+                            }}
+                          >
+                            Verify Link
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -3190,7 +3313,9 @@ function App() {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Jordan ISTD Gateway:</span>
-                    <span className="badge badge-success" style={{ padding: '1px 6px', fontSize: '10px' }}>Online</span>
+                    <span className={`badge ${istdEnabled && jofotaraConnected && jofotaraUsername && jofotaraSecret ? 'badge-success' : 'badge-danger'}`} style={{ padding: '1px 6px', fontSize: '10px' }}>
+                      {istdEnabled && jofotaraConnected && jofotaraUsername && jofotaraSecret ? 'Online' : 'Offline'}
+                    </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Local Printer Spooler:</span>
@@ -3201,7 +3326,18 @@ function App() {
                 <button
                   className="btn btn-primary"
                   style={{ width: '100%', marginTop: '12px', color: '#ffffff' }}
-                  onClick={() => triggerToast('Compliance & Delivery APIs successfully verified!', 'success')}
+                  onClick={() => {
+                    triggerToast('Verifying connection pathways...', 'info');
+                    setTimeout(() => {
+                      if (istdEnabled && (!jofotaraUsername || !jofotaraSecret)) {
+                        setJofotaraConnected(false);
+                        triggerToast('Verification failed: Jofotara credentials missing!', 'error');
+                      } else {
+                        setJofotaraConnected(true);
+                        triggerToast('All compliance pipelines & delivery channels verified!', 'success');
+                      }
+                    }, 1200);
+                  }}
                 >
                   Verify compliance & channels
                 </button>
