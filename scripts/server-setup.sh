@@ -1,20 +1,16 @@
 #!/bin/bash
-# Run once on the Oracle Cloud VM (Ubuntu 22.04)
-# ssh ubuntu@54.204.121.159 "bash -s" < scripts/server-setup.sh
+# Add cyshop.cy-com.com vhost to existing OCI nginx server (158.178.130.4)
+# Run: ssh ubuntu@158.178.130.4 "bash -s" < scripts/server-setup.sh
 
 set -e
+echo "=== CyShop vhost setup on cy-com.com OCI server ==="
 
-echo "=== CYBERCOM CyShop Server Setup ==="
-
-# 1. Update & install Nginx
-sudo apt-get update -y
-sudo apt-get install -y nginx
-
-# 2. Create web root
+# 1. Create web root
 sudo mkdir -p /var/www/cyshop
-sudo chown -R $USER:$USER /var/www/cyshop
+sudo chown -R ubuntu:ubuntu /var/www/cyshop
+echo "<html><body>CyShop loading...</body></html>" > /var/www/cyshop/index.html
 
-# 3. Install Nginx site config
+# 2. Install nginx vhost config
 sudo tee /etc/nginx/sites-available/cyshop > /dev/null <<'NGINXCONF'
 server {
     listen 80;
@@ -42,28 +38,16 @@ server {
 }
 NGINXCONF
 
-# 4. Enable site
+# 3. Enable site (keeps all existing sites running)
 sudo ln -sf /etc/nginx/sites-available/cyshop /etc/nginx/sites-enabled/cyshop
-sudo rm -f /etc/nginx/sites-enabled/default
 
-# 5. Allow passwordless nginx reload for deploy user
-echo "$USER ALL=(ALL) NOPASSWD: /bin/systemctl reload nginx" | sudo tee /etc/sudoers.d/nginx-reload
+# 4. Allow passwordless nginx reload for GitHub Actions deploy
+echo "ubuntu ALL=(ALL) NOPASSWD: /bin/systemctl reload nginx" | sudo tee /etc/sudoers.d/nginx-reload > /dev/null
 
-# 6. Test and start Nginx
-sudo nginx -t
-sudo systemctl enable nginx
-sudo systemctl restart nginx
-
-# 7. Open firewall ports (OCI requires both ufw AND OCI Security List)
-sudo ufw allow 22
-sudo ufw allow 80
-sudo ufw allow 443
-sudo ufw --force enable
+# 5. Test config and reload (safe — does not restart, keeps cy-com.com live)
+sudo nginx -t && sudo systemctl reload nginx
 
 echo ""
-echo "=== Setup complete ==="
-echo "Now open OCI Console → VCN → Security Lists → add Ingress rule:"
-echo "  Port 80  (HTTP)  from 0.0.0.0/0"
-echo "  Port 443 (HTTPS) from 0.0.0.0/0"
-echo ""
-echo "DNS: Add A record  cyshop  →  54.204.121.159  TTL 600"
+echo "=== Done ==="
+echo "cyshop.cy-com.com vhost active → /var/www/cyshop"
+echo "DNS: GoDaddy A record  cyshop → 158.178.130.4  TTL 600"
