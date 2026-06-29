@@ -34,8 +34,8 @@ const STEPS = [
 ];
 
 const PLANS = [
-  { name: 'Starter', price: '19', blurb: 'For independent sellers getting set up.', features: ['1 tenant', '3 users', 'REST API', 'Basic AI copilot', 'Community support'], cta: 'Start free', featured: false },
-  { name: 'Growth', price: '79', blurb: 'For teams scaling order volume and channels.', features: ['5 tenants', '25 users', 'GraphQL + REST', 'Full AI suite', 'Priority email support', 'SSO (Google/OIDC)'], cta: 'Start 14-day trial', featured: true },
+  { name: 'Starter', price: '19', blurb: 'For independent sellers getting set up.', features: ['1 tenant', '3 users', 'REST API', 'Basic AI copilot', 'Community support'], cta: 'Request Demo', featured: false },
+  { name: 'Growth', price: '79', blurb: 'For teams scaling order volume and channels.', features: ['5 tenants', '25 users', 'GraphQL + REST', 'Full AI suite', 'Priority email support', 'SSO (Google/OIDC)'], cta: 'Request Demo', featured: true },
   { name: 'Enterprise', price: 'Custom', blurb: 'For multi-brand ops needing isolation + audit.', features: ['Unlimited tenants', 'Custom RBAC', 'Dedicated infra', 'SLA + DPA', 'Private model hosting'], cta: 'Talk to sales', featured: false },
 ];
 
@@ -50,7 +50,7 @@ export default function Landing() {
 
   return (
     <div className="relative min-h-screen overflow-x-clip text-[var(--color-ink)]">
-      <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/80 backdrop-blur-xl border-b border-[var(--color-line)]' : 'bg-transparent'}`}>
+      <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-[rgba(255,255,255,0.08)]' : 'bg-transparent'}`}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Logo />
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[var(--color-ink-soft)]">
@@ -80,7 +80,7 @@ export default function Landing() {
               with an AI copilot that drafts quotes, forecasts demand, and flags churn before it happens.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link href="/wizard" className="cy-btn cy-btn-primary">Start free trial <ArrowRight className="w-4 h-4" /></Link>
+              <Link href="/wizard" className="cy-btn cy-btn-primary">Request Demo <ArrowRight className="w-4 h-4" /></Link>
               <button className="cy-btn cy-btn-ghost"><Play className="w-4 h-4" /> Watch 2-min demo</button>
               <span className="inline-flex items-center gap-2 text-sm text-[var(--color-ink-muted)] ml-1">
                 <span className="cy-blink" /> Live multi-tenant sandbox
@@ -131,7 +131,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="py-10 border-y border-[var(--color-line)] bg-[var(--color-surface)] overflow-hidden">
+      <section className="py-10 border-y border-[rgba(255,255,255,.08)] bg-[var(--color-surface)] overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
           <p className="text-xs uppercase tracking-[0.25em] text-[var(--color-ink-muted)] text-center mb-6">
             Trusted infrastructure · production-ready stack
@@ -232,9 +232,9 @@ export default function Landing() {
           </div>
           <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-6">
             {PLANS.map((p) => (
-              <div key={p.name} className={`relative rounded-[20px] p-8 border transition-all ${p.featured ? 'bg-[var(--color-brand-ink)] text-white border-transparent shadow-[0_20px_60px_-20px_rgba(237,108,0,.5)]' : 'bg-white border-[var(--color-line)] hover:border-[var(--color-ink)]'}`}>
+              <div key={p.name} className={`relative rounded-[20px] p-8 border transition-all ${p.featured ? 'bg-gradient-to-br from-[#1a1a2e] to-[#0f0f1a] text-white border-[rgba(237,108,0,.3)] shadow-[0_20px_60px_-20px_rgba(237,108,0,.5)]' : 'bg-[rgba(255,255,255,.04)] border-[rgba(255,255,255,.08)] hover:border-[rgba(255,255,255,.2)]'}`}>
                 {p.featured && <span className="absolute -top-3 left-8 cy-pill cy-pill-orange">Most popular</span>}
-                <div className={`text-sm font-bold uppercase tracking-widest ${p.featured ? 'text-white/70' : 'text-[var(--color-ink-muted)]'}`}>{p.name}</div>
+                <div className={`text-sm font-bold uppercase tracking-widest ${p.featured ? 'text-white/70' : 'text-[var(--color-ink-soft)]'}`}>{p.name}</div>
                 <div className="mt-4 flex items-baseline gap-1">
                   <span className="text-5xl font-heading font-black">{p.price === 'Custom' ? p.price : `$${p.price}`}</span>
                   {p.price !== 'Custom' && <span className={`text-sm ${p.featured ? 'text-white/60' : 'text-[var(--color-ink-muted)]'}`}>/ tenant / mo</span>}
@@ -268,7 +268,7 @@ export default function Landing() {
                 14-day free trial. No credit card. Real AI on real data — your data, isolated, encrypted.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-3">
-                <Link href="/wizard" className="cy-btn cy-btn-primary">Start free trial <ArrowRight className="w-4 h-4" /></Link>
+                <Link href="/wizard" className="cy-btn cy-btn-primary">Request Demo <ArrowRight className="w-4 h-4" /></Link>
                 <Link href="/contact" className="cy-btn cy-btn-ghost">Talk to sales</Link>
               </div>
             </div>

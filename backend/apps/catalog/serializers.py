@@ -1,0 +1,81 @@
+from rest_framework import serializers
+from .models import Category, ProductUnit, TaxClass, Product, ProductVariant
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    children_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Category
+        fields = '__all__'
+        read_only_fields = ['id', 'slug', 'created_at', 'updated_at']
+
+    def get_children_count(self, obj):
+        return obj.children.filter(is_deleted=False, is_active=True).count()
+
+    def create(self, validated_data):
+        validated_data['tenant_id'] = self.context['request'].tenant_id
+        return super().create(validated_data)
+
+
+class ProductUnitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductUnit
+        fields = '__all__'
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def create(self, validated_data):
+        validated_data['tenant_id'] = self.context['request'].tenant_id
+        return super().create(validated_data)
+
+
+class TaxClassSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TaxClass
+        fields = '__all__'
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def create(self, validated_data):
+        validated_data['tenant_id'] = self.context['request'].tenant_id
+        return super().create(validated_data)
+
+
+class ProductVariantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductVariant
+        fields = '__all__'
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def create(self, validated_data):
+        validated_data['tenant_id'] = self.context['request'].tenant_id
+        return super().create(validated_data)
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    variants = ProductVariantSerializer(many=True, read_only=True)
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    unit_name = serializers.CharField(source='unit.abbreviation', read_only=True)
+
+    class Meta:
+        model = Product
+        fields = '__all__'
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def create(self, validated_data):
+        validated_data['tenant_id'] = self.context['request'].tenant_id
+        return super().create(validated_data)
+
+
+class ProductListSerializer(serializers.ModelSerializer):
+    """Lightweight serializer for list views — omits variants."""
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    unit_name = serializers.CharField(source='unit.abbreviation', read_only=True)
+
+    class Meta:
+        model = Product
+        fields = [
+            'id', 'name', 'internal_ref', 'barcode', 'product_type',
+            'category', 'category_name', 'unit', 'unit_name',
+            'sell_price', 'cost_price', 'track_stock', 'min_stock_qty',
+            'pos_available', 'is_active', 'image_url',
+        ]

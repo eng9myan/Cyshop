@@ -24,11 +24,13 @@ jobs:
         env:
           DJANGO_DEBUG: 'True'
           USE_SQLITE: 'True'
+          DJANGO_SECRET_KEY: 'ci-test-secret-key-minimum-32-bytes-long-for-hs256'
         run: python manage.py check
       - name: Run tests
         env:
           DJANGO_DEBUG: 'True'
           USE_SQLITE: 'True'
+          DJANGO_SECRET_KEY: 'ci-test-secret-key-minimum-32-bytes-long-for-hs256'
         run: python manage.py test
 
   frontend:

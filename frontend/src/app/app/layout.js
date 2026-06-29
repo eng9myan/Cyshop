@@ -5,7 +5,8 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   LayoutDashboard, Users, ShieldAlert, Settings, User, LogOut, Bell, ChevronLeft, ChevronRight,
-  Target, FileText, ShoppingBag, BarChart3, MessageSquare, Layers, Search, Sparkles, Command
+  Target, FileText, ShoppingBag, BarChart3, MessageSquare, Layers, Search, Sparkles, Command,
+  Package, Warehouse, ArrowLeftRight, Tag, Monitor, Clock,
 } from "lucide-react";
 import Logo from "@/components/brand/Logo";
 
@@ -24,6 +25,27 @@ const NAV_GROUPS = [
       { name: "Leads", path: "/app/leads", icon: Target },
       { name: "Quotations", path: "/app/quotations", icon: FileText },
       { name: "Sales Orders", path: "/app/orders", icon: ShoppingBag },
+    ],
+  },
+  {
+    label: "Point of Sale",
+    items: [
+      { name: "POS Terminal", path: "/app/pos", icon: Monitor },
+      { name: "Sessions", path: "/app/pos/sessions", icon: Clock },
+    ],
+  },
+  {
+    label: "Catalog",
+    items: [
+      { name: "Products", path: "/app/catalog", icon: Package },
+      { name: "Categories", path: "/app/catalog/categories", icon: Tag },
+    ],
+  },
+  {
+    label: "Inventory",
+    items: [
+      { name: "Stock Levels", path: "/app/inventory", icon: Warehouse },
+      { name: "Stock Movements", path: "/app/inventory/movements", icon: ArrowLeftRight },
     ],
   },
   {
