@@ -120,16 +120,16 @@ export default function AppLayout({ children }) {
     <div className="min-h-dvh flex bg-[var(--color-surface)] text-[var(--color-ink)]">
       {/* Sidebar */}
       <aside
-        className={`hidden md:flex flex-col bg-white border-r border-[var(--color-line)] transition-[width] duration-300 ${
+        className={`hidden md:flex flex-col bg-[var(--color-surface)] border-r border-[rgba(255,255,255,0.07)] transition-[width] duration-300 ${
           collapsed ? "w-[76px]" : "w-[260px]"
         }`}
       >
-        <div className="h-16 px-4 flex items-center justify-between border-b border-[var(--color-line)]">
+        <div className="h-16 px-4 flex items-center justify-between border-b border-[rgba(255,255,255,0.07)]">
           {collapsed ? <Logo mark href={null} /> : <Logo href={null} />}
         </div>
 
         {!collapsed && (
-          <div className="px-4 py-4 border-b border-[var(--color-line)]">
+          <div className="px-4 py-4 border-b border-[rgba(255,255,255,0.07)]">
             <button className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-[var(--color-surface-2)] hover:bg-[var(--color-line)] transition text-left">
               <span className="flex items-center gap-2 min-w-0">
                 <span className="w-6 h-6 rounded-md bg-gradient-to-br from-[#ED6C00] to-[#FF8A2A] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
@@ -179,7 +179,7 @@ export default function AppLayout({ children }) {
           ))}
         </nav>
 
-        <div className="border-t border-[var(--color-line)] p-3 space-y-2">
+        <div className="border-t border-[rgba(255,255,255,0.07)] p-3 space-y-2">
           {!collapsed && (
             <div className="flex items-center gap-3 px-2 py-2 rounded-lg">
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#59C3E1] to-[#0E7C9B] text-white text-xs font-bold flex items-center justify-center shrink-0">
@@ -211,7 +211,7 @@ export default function AppLayout({ children }) {
       {/* Main column */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Topbar */}
-        <header className="h-16 bg-white/80 backdrop-blur-xl border-b border-[var(--color-line)] sticky top-0 z-30">
+        <header className="h-16 bg-[rgba(15,15,26,0.85)] backdrop-blur-xl border-b border-[rgba(255,255,255,0.07)] sticky top-0 z-30">
           <div className="h-full px-4 md:px-8 flex items-center gap-4">
             <div className="min-w-0">
               <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--color-ink-muted)]">

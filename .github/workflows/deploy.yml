@@ -52,8 +52,29 @@ jobs:
             docker compose build --pull
             docker compose up -d --remove-orphans
             docker image prune -f
+
+            # Wait for backend to be healthy
+            echo "Waiting for backend…"
+            for i in $(seq 1 12); do
+              if curl -fsS "http://localhost:8020/healthz/" >/dev/null 2>&1; then
+                echo "Backend healthy"
+                break
+              fi
+              sleep 5
+            done
+
+            # Seed demo tenant + admin credentials
+            docker compose exec -T cyshop-backend python manage.py migrate --run-syncdb
+            docker compose exec -T cyshop-backend python manage.py seed_demo
             docker compose ps
           EOF
+
+      - name: Reload nginx
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" "sudo nginx -t && sudo systemctl reload nginx"
 
       - name: Smoke-test public endpoint
         run: |
@@ -62,7 +83,7 @@ jobs:
               echo "Health OK"
               exit 0
             fi
-            echo "Waiting for healthz... attempt $i"
+            echo "Waiting for healthz… attempt $i"
             sleep 10
           done
           echo "::error::healthz never responded"

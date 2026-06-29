@@ -31,8 +31,8 @@ services:
       dockerfile: Dockerfile
     container_name: cyshop-backend
     restart: unless-stopped
-    expose:
-      - "8000"
+    ports:
+      - "8020:8000"
     environment:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY must be set in .env}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-False}
@@ -60,33 +60,12 @@ services:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://cyshop.cy-com.com}
     container_name: cyshop-frontend
     restart: unless-stopped
-    expose:
-      - "3000"
+    ports:
+      - "3020:3000"
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://cyshop.cy-com.com}
     depends_on:
       - cyshop-backend
 
-  caddy:
-    image: caddy:2-alpine
-    container_name: cyshop-caddy
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    environment:
-      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:-cyshop.cy-com.com}
-      CADDY_EMAIL: ${CADDY_EMAIL:-admin@cy-com.com}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - cyshop-frontend
-      - cyshop-backend
-
 volumes:
   pgdata:
-  caddy_data:
-  caddy_config:

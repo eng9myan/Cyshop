@@ -1,13 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, Sparkles, AlertCircle, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, Sparkles, AlertCircle, ArrowRight, Play, Zap } from "lucide-react";
 import Logo from "@/components/brand/Logo";
+import { Suspense } from "react";
 
-export default function LoginPage() {
+const DEMO = { subdomain: "demo", username: "demo", password: "Demo@cyshop1" };
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [subdomain, setSubdomain] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -15,15 +19,50 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (searchParams.get("demo") === "1") {
+      fillAndSubmitDemo();
+    }
+  }, []);
+
+  const fillAndSubmitDemo = () => {
+    setSubdomain(DEMO.subdomain);
+    setUsername(DEMO.username);
+    setPassword(DEMO.password);
+    setError("");
+    activateDemoSession();
+  };
+
+  const activateDemoSession = () => {
+    localStorage.setItem("access_token", "cyshop-demo-token");
+    localStorage.setItem("refresh_token", "cyshop-demo-refresh");
+    localStorage.setItem("tenant_id", "00000000-0000-0000-0000-000000000001");
+    localStorage.setItem("tenant_name", "CyShop Demo");
+    localStorage.setItem("username", "demo");
+    localStorage.setItem("email", "demo@cy-com.com");
+    localStorage.setItem("scopes", JSON.stringify(["pos", "inventory", "crm", "catalog", "orders", "analytics"]));
+    router.push("/app");
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    // Demo bypass — works without backend
+    if (subdomain === DEMO.subdomain && username === DEMO.username && password === DEMO.password) {
+      activateDemoSession();
+      return;
+    }
+
     try {
       const base = process.env.NEXT_PUBLIC_API_URL || "";
       const res = await fetch(`${base}/api/v1/identity/login/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...(subdomain ? { "X-Tenant-Subdomain": subdomain } : {}) },
+        headers: {
+          "Content-Type": "application/json",
+          ...(subdomain ? { "X-Tenant-Subdomain": subdomain } : {}),
+        },
         body: JSON.stringify({ username, password }),
       });
       if (!res.ok) {
@@ -58,18 +97,56 @@ export default function LoginPage() {
         </div>
 
         <div className="mx-auto w-full max-w-md py-12">
-          <span className="cy-pill cy-pill-orange"><Sparkles className="w-3.5 h-3.5" /> Sign in to Cyshop</span>
-          <h1 className="mt-5 text-3xl md:text-4xl font-heading font-black leading-tight">Welcome back.</h1>
+          <span className="cy-pill cy-pill-orange">
+            <Sparkles className="w-3.5 h-3.5" /> Sign in to CyShop
+          </span>
+          <h1 className="mt-5 text-3xl md:text-4xl font-heading font-black leading-tight">
+            Welcome back.
+          </h1>
           <p className="mt-2 text-[var(--color-ink-soft)]">Pick up where the AI left off.</p>
 
+          {/* Demo Credentials Banner */}
+          <div className="mt-6 rounded-2xl border border-[rgba(89,195,225,0.25)] bg-[rgba(89,195,225,0.06)] p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Zap className="w-4 h-4 text-[var(--color-brand-blue)]" />
+                  <span className="text-sm font-bold text-[var(--color-brand-blue)]">Try the live demo instantly</span>
+                </div>
+                <div className="text-xs text-[var(--color-ink-muted)] space-y-0.5">
+                  <div>Workspace: <code className="font-mono text-[var(--color-ink-soft)]">demo</code></div>
+                  <div>Username: <code className="font-mono text-[var(--color-ink-soft)]">demo</code></div>
+                  <div>Password: <code className="font-mono text-[var(--color-ink-soft)]">Demo@cyshop1</code></div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={fillAndSubmitDemo}
+                className="cy-btn cy-btn-ghost !py-2 !px-4 text-sm shrink-0"
+              >
+                <Play className="w-3.5 h-3.5 text-[var(--color-brand-blue)]" />
+                Launch Demo
+              </button>
+            </div>
+          </div>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[var(--color-line)]" />
+            </div>
+            <div className="relative flex justify-center text-xs text-[var(--color-ink-muted)]">
+              <span className="bg-[var(--color-bg)] px-3">or sign in with your account</span>
+            </div>
+          </div>
+
           {error && (
-            <div role="alert" className="mt-6 flex items-start gap-3 p-3 rounded-xl border border-[rgba(220,38,38,0.3)] bg-[rgba(220,38,38,0.06)] text-[#DC2626] text-sm">
+            <div role="alert" className="mb-5 flex items-start gap-3 p-3 rounded-xl border border-[rgba(220,38,38,0.3)] bg-[rgba(220,38,38,0.06)] text-[#DC2626] text-sm">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="mt-7 space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4">
             <Field
               id="subdomain"
               label="Workspace"
@@ -78,7 +155,7 @@ export default function LoginPage() {
               onChange={setSubdomain}
               placeholder="acme"
               autoComplete="organization"
-              suffix=".cyshop.app"
+              suffix=".cyshop.cy-com.com"
             />
             <Field
               id="username"
@@ -103,7 +180,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   autoComplete="current-password"
-                  className="w-full h-11 rounded-xl bg-white border border-[var(--color-line)] px-4 pr-11 text-sm focus:outline-none focus:border-[#ED6C00] focus:ring-2 focus:ring-[rgba(237,108,0,0.18)] transition"
+                  className="w-full h-11 rounded-xl bg-[var(--color-surface)] border border-[var(--color-line)] px-4 pr-11 text-sm focus:outline-none focus:border-[#ED6C00] focus:ring-2 focus:ring-[rgba(237,108,0,0.18)] transition text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)]"
                 />
                 <button
                   type="button"
@@ -118,7 +195,7 @@ export default function LoginPage() {
 
             <div className="flex justify-between items-center text-sm">
               <label className="flex items-center gap-2 cursor-pointer text-[var(--color-ink-soft)]">
-                <input type="checkbox" className="w-4 h-4 rounded border-[var(--color-line)] text-[#ED6C00] focus:ring-[#ED6C00]" />
+                <input type="checkbox" className="w-4 h-4 rounded border-[var(--color-line)] accent-[#ED6C00]" />
                 Remember me
               </label>
               <a href="#" className="font-semibold text-[#ED6C00] hover:underline">Forgot password?</a>
@@ -138,7 +215,7 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-8 text-center text-sm text-[var(--color-ink-muted)]">
-            New to Cyshop?{" "}
+            New to CyShop?{" "}
             <Link href="/wizard" className="font-semibold text-[var(--color-ink)] hover:text-[#ED6C00]">
               Create your workspace →
             </Link>
@@ -146,7 +223,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-xs text-[var(--color-ink-muted)]">
-          © {new Date().getFullYear()} Cyshop · A CyberCom company
+          © {new Date().getFullYear()} CyShop · A CyberCom company
         </p>
       </div>
 
@@ -159,6 +236,7 @@ export default function LoginPage() {
               "radial-gradient(40rem 30rem at 80% 10%, rgba(237,108,0,.45), transparent 60%), radial-gradient(40rem 30rem at 10% 100%, rgba(89,195,225,.4), transparent 60%)",
           }}
         />
+        <div className="cy-grid absolute inset-0" aria-hidden />
         <div className="relative h-full flex flex-col justify-between p-12">
           <div />
           <div className="max-w-md">
@@ -166,17 +244,17 @@ export default function LoginPage() {
               <span className="cy-blink" /> Live AI workspace
             </span>
             <h2 className="mt-4 text-3xl xl:text-4xl font-heading font-black leading-tight">
-              Your commerce stack, <br />
+              Your retail stack,<br />
               <span className="cy-text-gradient">already thinking ahead.</span>
             </h2>
             <p className="mt-4 text-white/70 leading-relaxed">
-              Pipeline forecasts, churn alerts, and quote drafts ready the moment you sign in.
-              Tenant-isolated. Encrypted. Production-grade.
+              POS, inventory, CRM, AI forecasting and loyalty — all in one platform.
+              Tenant-isolated. Production-grade.
             </p>
             <ul className="mt-6 space-y-2 text-sm">
-              {["Multi-tenant by design", "GraphQL + REST surface", "Audit log on every change"].map((t) => (
+              {["Multi-tenant by design", "Works offline (POS)", "AI-powered demand forecasting"].map((t) => (
                 <li key={t} className="flex items-center gap-2 text-white/80">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#59C3E1]" /> {t}
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#59C3E1]" aria-hidden /> {t}
                 </li>
               ))}
             </ul>
@@ -185,6 +263,14 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-dvh bg-[#0a0a0f]" />}>
+      <LoginForm />
+    </Suspense>
   );
 }
 
@@ -203,7 +289,7 @@ function Field({ id, label, hint, value, onChange, placeholder, autoComplete, ty
           placeholder={placeholder}
           autoComplete={autoComplete}
           required={required}
-          className={`w-full h-11 rounded-xl bg-white border border-[var(--color-line)] px-4 ${suffix ? "pr-28" : ""} text-sm focus:outline-none focus:border-[#ED6C00] focus:ring-2 focus:ring-[rgba(237,108,0,0.18)] transition`}
+          className={`w-full h-11 rounded-xl bg-[var(--color-surface)] border border-[var(--color-line)] px-4 ${suffix ? "pr-40" : ""} text-sm focus:outline-none focus:border-[#ED6C00] focus:ring-2 focus:ring-[rgba(237,108,0,0.18)] transition text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)]`}
         />
         {suffix && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--color-ink-muted)] font-mono">
