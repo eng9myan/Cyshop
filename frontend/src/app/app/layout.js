@@ -229,7 +229,7 @@ export default function AppLayout({ children }) {
               >
                 <Search className="w-4 h-4" />
                 <span className="flex-1 text-left">Ask AI or search anything…</span>
-                <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded border border-[var(--color-line)] bg-white">
+                <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded border border-[rgba(255,255,255,0.12)] bg-[var(--color-surface-2)] text-[var(--color-ink-muted)]">
                   <Command className="w-3 h-3" /> K
                 </span>
               </button>
@@ -272,7 +272,7 @@ export default function AppLayout({ children }) {
                           key={n.id}
                           className={`p-3 rounded-lg border text-sm ${
                             n.is_read
-                              ? "bg-white border-[var(--color-line)]"
+                              ? "bg-[var(--color-surface-2)] border-[rgba(255,255,255,0.07)]"
                               : "bg-[rgba(237,108,0,0.06)] border-[rgba(237,108,0,0.25)]"
                           }`}
                         >
@@ -302,7 +302,7 @@ export default function AppLayout({ children }) {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-[var(--color-line)] overflow-hidden"
+            className="w-full max-w-2xl rounded-2xl bg-[var(--color-surface)] shadow-2xl border border-[rgba(255,255,255,0.10)] overflow-hidden"
           >
             <div className="flex items-center gap-3 px-4 h-14 border-b border-[var(--color-line)]">
               <Sparkles className="w-5 h-5 text-[#ED6C00]" />
