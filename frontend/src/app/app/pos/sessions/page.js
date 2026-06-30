@@ -231,7 +231,7 @@ export default function PosSessionsPage() {
                       {s.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-[var(--color-ink-muted)]">{s.cashier || "—"}</td>
+                  <td className="px-4 py-3 text-[var(--color-ink-muted)]">{s.cashier_username || "—"}</td>
                   <td className="px-4 py-3 text-xs text-[var(--color-ink-muted)]">
                     {s.opening_at ? new Date(s.opening_at).toLocaleString() : "—"}
                   </td>

@@ -25,6 +25,12 @@ class PosSessionViewSet(viewsets.ModelViewSet):
             qs = qs.filter(status=v)
         return qs
 
+    def perform_create(self, serializer):
+        serializer.save(
+            cashier=self.request.user,
+            tenant_id=self.request.tenant_id,
+        )
+
     @action(detail=True, methods=['post'])
     def close(self, request, pk=None):
         session = self.get_object()

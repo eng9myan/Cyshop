@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   LayoutDashboard, Users, ShieldAlert, Settings, User, LogOut, Bell, ChevronLeft, ChevronRight,
   Target, FileText, ShoppingBag, BarChart3, MessageSquare, Layers, Search, Sparkles, Command,
-  Package, Warehouse, ArrowLeftRight, Tag, Monitor, Clock,
+  Package, Warehouse, ArrowLeftRight, Tag, Monitor, Clock, Truck, Building2,
 } from "lucide-react";
 import Logo from "@/components/brand/Logo";
 
@@ -46,6 +46,13 @@ const NAV_GROUPS = [
     items: [
       { name: "Stock Levels", path: "/app/inventory", icon: Warehouse },
       { name: "Stock Movements", path: "/app/inventory/movements", icon: ArrowLeftRight },
+    ],
+  },
+  {
+    label: "Purchasing",
+    items: [
+      { name: "Purchase Orders", path: "/app/purchasing", icon: Truck },
+      { name: "Vendors", path: "/app/purchasing/vendors", icon: Building2 },
     ],
   },
   {

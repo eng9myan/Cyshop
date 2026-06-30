@@ -8,15 +8,16 @@ from apps.catalog.models import Product, ProductVariant
 class PosSessionSerializer(serializers.ModelSerializer):
     order_count = serializers.SerializerMethodField()
     total_sales = serializers.SerializerMethodField()
+    cashier_username = serializers.SerializerMethodField()
 
     class Meta:
         model = PosSession
         fields = [
-            'id', 'company', 'branch', 'cashier', 'name', 'status',
+            'id', 'company', 'branch', 'cashier', 'cashier_username', 'name', 'status',
             'opening_float', 'closing_float', 'opening_at', 'closing_at',
             'notes', 'order_count', 'total_sales', 'tenant_id', 'created_at',
         ]
-        read_only_fields = ['id', 'opening_at', 'order_count', 'total_sales', 'tenant_id', 'created_at']
+        read_only_fields = ['id', 'cashier', 'cashier_username', 'opening_at', 'order_count', 'total_sales', 'tenant_id', 'created_at']
 
     def get_order_count(self, obj):
         return obj.orders.filter(status='PAID', is_deleted=False).count()
@@ -25,6 +26,9 @@ class PosSessionSerializer(serializers.ModelSerializer):
         from django.db.models import Sum
         result = obj.orders.filter(status='PAID', is_deleted=False).aggregate(t=Sum('total'))
         return str(result['t'] or Decimal('0'))
+
+    def get_cashier_username(self, obj):
+        return getattr(obj.cashier, 'username', None) if obj.cashier_id else None
 
     def create(self, validated_data):
         validated_data['tenant_id'] = self.context['request'].tenant_id

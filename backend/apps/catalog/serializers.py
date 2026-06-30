@@ -70,6 +70,10 @@ class ProductListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for list views — omits variants."""
     category_name = serializers.CharField(source='category.name', read_only=True)
     unit_name = serializers.CharField(source='unit.abbreviation', read_only=True)
+    tax_class_rate = serializers.DecimalField(
+        source='tax_class.rate', max_digits=5, decimal_places=4,
+        read_only=True, default='0.0000',
+    )
 
     class Meta:
         model = Product
@@ -77,5 +81,5 @@ class ProductListSerializer(serializers.ModelSerializer):
             'id', 'name', 'internal_ref', 'barcode', 'product_type',
             'category', 'category_name', 'unit', 'unit_name',
             'sell_price', 'cost_price', 'track_stock', 'min_stock_qty',
-            'pos_available', 'is_active', 'image_url',
+            'pos_available', 'is_active', 'image_url', 'tax_class_rate',
         ]
