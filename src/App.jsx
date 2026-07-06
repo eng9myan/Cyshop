@@ -35,6 +35,15 @@ import {
 } from 'lucide-react';
 
 const INITIAL_PRODUCTS = [
+  { id: 'raw1', name: 'Arabica Coffee Beans (kg)', price: 15.0, category: 'Raw Materials', prepTime: '-', pos_available: false },
+  { id: 'raw2', name: 'Burger Bun (pack)', price: 1.2, category: 'Raw Materials', prepTime: '-', pos_available: false },
+  { id: 'raw3', name: 'Beef Patty 150g (box)', price: 18.0, category: 'Raw Materials', prepTime: '-', pos_available: false },
+  { id: 'raw4', name: 'Cheddar Cheese (kg)', price: 8.5, category: 'Raw Materials', prepTime: '-', pos_available: false },
+  { id: 'raw5', name: 'Special Sauce (L)', price: 6.0, category: 'Raw Materials', prepTime: '-', pos_available: false },
+  { id: 'raw6', name: 'Pizza Dough 250g (pack)', price: 4.5, category: 'Raw Materials', prepTime: '-', pos_available: false },
+  { id: 'raw7', name: 'Tomato Sauce (can)', price: 3.0, category: 'Raw Materials', prepTime: '-', pos_available: false },
+  { id: 'raw8', name: 'Mozzarella Cheese (kg)', price: 12.0, category: 'Raw Materials', prepTime: '-', pos_available: false },
+  { id: 'raw9', name: 'Fresh Basil (g)', price: 1.5, category: 'Raw Materials', prepTime: '-', pos_available: false },
   { id: 'p1', name: 'Cyber Espresso', price: 3.5, category: 'Coffee', prepTime: '3 min' },
   { id: 'p2', name: 'Quantum Latte', price: 4.5, category: 'Coffee', prepTime: '4 min' },
   { id: 'p3', name: 'Neo Cappuccino', price: 4.25, category: 'Coffee', prepTime: '4 min' },
@@ -489,6 +498,56 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [globalSearch, setGlobalSearch] = useState('');
 
+  // CFO, HR, CEO, COO, Supply Chain & Inventory Custom States
+  const [language, setLanguage] = useState('en');
+  const [deviceMode, setDeviceMode] = useState('manager');
+  const [businessType, setBusinessType] = useState('cafe');
+  
+  // Custom States for Multi-Device Simulation
+  const [activeTableOrder, setActiveTableOrder] = useState(null);
+  const [selectedTable, setSelectedTable] = useState('T1');
+  const [attendancePin, setAttendancePin] = useState('');
+  const [scannedBarcode, setScannedBarcode] = useState('');
+  const [warehouseLogs, setWarehouseLogs] = useState([
+    { id: 'REC-001', type: 'Receiving', item: 'Arabica Coffee Beans (kg)', qty: 100, date: '2026-07-06' },
+    { id: 'WST-002', type: 'Spoilage', item: 'Burger Bun (pack)', qty: 5, date: '2026-07-06' }
+  ]);
+  const [reportingCurrency, setReportingCurrency] = useState('USD');
+  const [selectedBranchFilter, setSelectedBranchFilter] = useState('all');
+  const [showPrinterModal, setShowPrinterModal] = useState(false);
+  const [selectedPrinter, setSelectedPrinter] = useState('Epson TM-T88VI');
+  const [receiptTemplate, setReceiptTemplate] = useState('standard');
+  const [printingInvoice, setPrintingInvoice] = useState(null);
+  const [interBranchTransfers, setInterBranchTransfers] = useState([
+    { id: 'TRF-001', from: 'Riyadh Main', to: 'Amman Hub', product: 'Arabica Coffee Beans (kg)', qty: 25, status: 'Completed', date: '2026-06-12' },
+    { id: 'TRF-002', from: 'Amman Hub', to: 'Riyadh Main', product: 'Mozzarella Cheese (kg)', qty: 50, status: 'In Transit', date: '2026-06-15' }
+  ]);
+  const [newTransferFrom, setNewTransferFrom] = useState('Riyadh Main');
+  const [newTransferTo, setNewTransferTo] = useState('Amman Hub');
+  const [newTransferProd, setNewTransferProd] = useState('Arabica Coffee Beans (kg)');
+  const [newTransferQty, setNewTransferQty] = useState('');
+
+  // Translations dictionary
+  const getMenuLabel = (key) => {
+    const labels = {
+      en: {
+        dashboard: 'Dashboard', pos: 'POS Cashier', kds: 'KDS Kitchen', inventory: 'Inventory',
+        customers: 'CRM Loyalty', invoices: 'Invoices & VAT', shifts: 'Staff Shifts', analytics: 'Analytics',
+        kiosk: 'Kiosk & QR Menu', hr: 'HR Management', attendance: 'Attendance', payroll: 'Payroll',
+        accounting: 'Accounting', bom: 'BOM & Kits', supply: 'Supply Chain', setup: 'Setup',
+        settings: 'Settings', 'nova-avatar': 'Nova AI Avatar'
+      },
+      ar: {
+        dashboard: 'لوحة التحكم', pos: 'نقطة البيع', kds: 'شاشة المطبخ (KDS)', inventory: 'المستودع والمخازن',
+        customers: 'العملاء والولاء', invoices: 'الفواتير والضريبة', shifts: 'ورديات الموظفين', analytics: 'التحليلات والأداء',
+        kiosk: 'الخدمة الذاتية (كشك)', hr: 'الموارد البشرية', attendance: 'سجل الحضور', payroll: 'مسيرات الرواتب',
+        accounting: 'الحسابات العامة', bom: 'قوائم المواد والإنتاج', supply: 'سلاسل الإمداد والطلب', setup: 'معالج التهيئة',
+        settings: 'إعدادات النظام', 'nova-avatar': 'المساعد الذكي (نوفا)'
+      }
+    };
+    return labels[language][key] || key;
+  };
+
   // Core Data States
   // Initial products setup with images
   const initialProductsWithImages = INITIAL_PRODUCTS.map((p) => {
@@ -896,6 +955,137 @@ function App() {
   });
   const [setupComplete, setSetupComplete] = useState(false);
 
+
+  // ── CyIdentity Enterprise IAM State ───────────────────────────────
+  const [iamTab, setIamTab] = useState('users');
+  const [iamUserModal, setIamUserModal] = useState(false);
+  const [iamSelectedUser, setIamSelectedUser] = useState(null);
+  const [iamRoleFilter, setIamRoleFilter] = useState('All');
+  const [iamPermModule, setIamPermModule] = useState('pos');
+  const [iamSearchQuery, setIamSearchQuery] = useState('');
+
+  const [currentUser, setCurrentUser] = useState({
+    id: 'u-ceo-01', name: 'Ahmad Al-Rashidi', email: 'ceo@cyshop.com',
+    role: 'CEO', category: 'Executive', branch: '*', area: '*', warehouse: '*',
+    scopes: ['*'], mfaEnabled: true, status: 'active', lastLogin: '2026-07-06 00:10'
+  });
+
+  const [iamUsers, setIamUsers] = useState([
+    { id: 'u-ceo-01', name: 'Ahmad Al-Rashidi',  email: 'ceo@cyshop.com',      role: 'CEO',               category: 'Executive',   branch: '*',          area: '*',     status: 'active',   mfaEnabled: true,  lastLogin: '2026-07-06 00:10', sessions: 2 },
+    { id: 'u-cfo-01', name: 'Maha Al-Khalidi',   email: 'cfo@cyshop.com',      role: 'CFO',               category: 'Finance',     branch: '*',          area: '*',     status: 'active',   mfaEnabled: true,  lastLogin: '2026-07-05 22:44', sessions: 1 },
+    { id: 'u-coo-01', name: 'Samer Nasser',       email: 'coo@cyshop.com',      role: 'COO',               category: 'Executive',   branch: '*',          area: '*',     status: 'active',   mfaEnabled: true,  lastLogin: '2026-07-05 21:00', sessions: 1 },
+    { id: 'u-bm-01',  name: 'Lina Haddad',        email: 'lina@cyshop.com',     role: 'Branch Manager',    category: 'Operations',  branch: 'Amman Main', area: 'North', status: 'active',   mfaEnabled: false, lastLogin: '2026-07-06 00:05', sessions: 1 },
+    { id: 'u-bm-02',  name: 'Khaled Abu Roz',     email: 'khaled@cyshop.com',   role: 'Branch Manager',    category: 'Operations',  branch: 'Riyadh Hub', area: 'KSA',   status: 'active',   mfaEnabled: false, lastLogin: '2026-07-05 23:30', sessions: 1 },
+    { id: 'u-cs-01',  name: 'Nour Yassin',         email: 'nour@cyshop.com',     role: 'Cashier',           category: 'Sales',       branch: 'Amman Main', area: 'North', status: 'active',   mfaEnabled: false, lastLogin: '2026-07-06 00:01', sessions: 1 },
+    { id: 'u-cs-02',  name: 'Tarek Mansour',       email: 'tarek@cyshop.com',    role: 'Senior Cashier',    category: 'Sales',       branch: 'Riyadh Hub', area: 'KSA',   status: 'active',   mfaEnabled: false, lastLogin: '2026-07-05 23:50', sessions: 1 },
+    { id: 'u-wt-01',  name: 'Sara Al-Zoubi',       email: 'sara@cyshop.com',     role: 'Waiter',            category: 'Sales',       branch: 'Amman Main', area: 'North', status: 'active',   mfaEnabled: false, lastLogin: '2026-07-06 00:00', sessions: 1 },
+    { id: 'u-kc-01',  name: 'Hassan Barakat',      email: 'hassan@cyshop.com',   role: 'Chef',              category: 'Kitchen',     branch: 'Amman Main', area: 'North', status: 'active',   mfaEnabled: false, lastLogin: '2026-07-05 23:55', sessions: 1 },
+    { id: 'u-wm-01',  name: 'Rami Al-Dmour',       email: 'rami@cyshop.com',     role: 'Warehouse Manager', category: 'Inventory',   branch: '*',          area: '*',     warehouse: 'Riyadh Wh', status: 'active', mfaEnabled: false, lastLogin: '2026-07-05 22:00', sessions: 1 },
+    { id: 'u-ac-01',  name: 'Diana Farhan',         email: 'diana@cyshop.com',    role: 'Accountant',        category: 'Finance',     branch: '*',          area: '*',     status: 'active',   mfaEnabled: true,  lastLogin: '2026-07-05 20:30', sessions: 1 },
+    { id: 'u-hr-01',  name: 'Raneem Suleiman',     email: 'raneem@cyshop.com',   role: 'HR Manager',        category: 'HR',          branch: '*',          area: '*',     status: 'active',   mfaEnabled: false, lastLogin: '2026-07-05 19:00', sessions: 0 },
+    { id: 'u-it-01',  name: 'Omar Al-Shehab',      email: 'omar@cyshop.com',     role: 'System Administrator', category: 'IT',      branch: '*',          area: '*',     status: 'active',   mfaEnabled: true,  lastLogin: '2026-07-05 18:00', sessions: 1 },
+    { id: 'u-mk-01',  name: 'Lara Bisharat',       email: 'lara@cyshop.com',     role: 'Marketing Manager', category: 'CRM',         branch: '*',          area: '*',     status: 'active',   mfaEnabled: false, lastLogin: '2026-07-05 17:00', sessions: 0 },
+    { id: 'u-cs-dis', name: 'Fadi Nawaf',           email: 'fadi@cyshop.com',     role: 'Cashier',           category: 'Sales',       branch: 'Dubai Hub',  area: 'UAE',   status: 'disabled', mfaEnabled: false, lastLogin: '2026-06-30 08:00', sessions: 0 },
+  ]);
+
+  const IAM_ROLES = [
+    // Executive
+    { id: 'ceo', name: 'CEO', category: 'Executive', scope: 'Global', color: '#ff6d00',
+      perms: { pos: ['open','close','refund','discount','void','override','drawer'], inventory: ['view','receive','transfer','adjust','count','cost'], purchasing: ['create','approve','receive','cancel'], accounting: ['view','post','approve_pay','close_period'], hr: ['view','edit','approve_leave','process_payroll'] } },
+    { id: 'cfo', name: 'CFO', category: 'Executive', scope: 'Global', color: '#ff6d00',
+      perms: { pos: ['view'], inventory: ['view','cost'], purchasing: ['approve','view'], accounting: ['view','post','approve_pay','close_period'], hr: ['view'] } },
+    { id: 'coo', name: 'COO', category: 'Executive', scope: 'Global', color: '#ff6d00',
+      perms: { pos: ['open','close','refund','discount','void','override'], inventory: ['view','receive','transfer','adjust','count'], purchasing: ['create','approve','receive','cancel'], accounting: ['view'], hr: ['view','edit'] } },
+    // Operations
+    { id: 'ops_mgr', name: 'Operations Manager', category: 'Operations', scope: 'Area', color: '#7c3aed',
+      perms: { pos: ['open','close','refund','discount','void'], inventory: ['view','receive','transfer','adjust','count'], purchasing: ['create','approve','receive'], accounting: ['view'], hr: ['view','edit','approve_leave'] } },
+    { id: 'area_mgr', name: 'Area Manager', category: 'Operations', scope: 'Area', color: '#7c3aed',
+      perms: { pos: ['open','close','refund','discount'], inventory: ['view','receive','transfer','count'], purchasing: ['create','receive'], accounting: ['view'], hr: ['view','approve_leave'] } },
+    { id: 'branch_mgr', name: 'Branch Manager', category: 'Operations', scope: 'Branch', color: '#7c3aed',
+      perms: { pos: ['open','close','refund','discount'], inventory: ['view','receive','count'], purchasing: ['create'], accounting: ['view'], hr: ['view'] } },
+    { id: 'asst_mgr', name: 'Assistant Manager', category: 'Operations', scope: 'Branch', color: '#7c3aed',
+      perms: { pos: ['open','close','discount'], inventory: ['view','count'], purchasing: [], accounting: [], hr: ['view'] } },
+    // Sales
+    { id: 'cashier', name: 'Cashier', category: 'Sales', scope: 'Terminal', color: '#0ea5e9',
+      perms: { pos: ['open','close','discount'], inventory: [], purchasing: [], accounting: [], hr: [] } },
+    { id: 'sr_cashier', name: 'Senior Cashier', category: 'Sales', scope: 'Branch', color: '#0ea5e9',
+      perms: { pos: ['open','close','refund','discount','drawer'], inventory: [], purchasing: [], accounting: [], hr: [] } },
+    { id: 'waiter', name: 'Waiter', category: 'Sales', scope: 'Branch', color: '#0ea5e9',
+      perms: { pos: ['view'], inventory: [], purchasing: [], accounting: [], hr: [] } },
+    { id: 'shift_sup', name: 'Shift Supervisor', category: 'Sales', scope: 'Branch', color: '#0ea5e9',
+      perms: { pos: ['open','close','refund','discount','void','drawer'], inventory: ['view'], purchasing: [], accounting: [], hr: ['view'] } },
+    // Kitchen
+    { id: 'kitchen_mgr', name: 'Kitchen Manager', category: 'Kitchen', scope: 'Branch', color: '#f59e0b',
+      perms: { pos: ['view'], inventory: ['view','receive','count','cost'], purchasing: ['create'], accounting: [], hr: ['view'] } },
+    { id: 'chef', name: 'Chef', category: 'Kitchen', scope: 'Branch', color: '#f59e0b',
+      perms: { pos: ['view'], inventory: ['view'], purchasing: [], accounting: [], hr: [] } },
+    { id: 'line_cook', name: 'Line Cook', category: 'Kitchen', scope: 'Terminal', color: '#f59e0b',
+      perms: { pos: ['view'], inventory: [], purchasing: [], accounting: [], hr: [] } },
+    { id: 'barista', name: 'Barista', category: 'Kitchen', scope: 'Terminal', color: '#f59e0b',
+      perms: { pos: ['open'], inventory: ['view'], purchasing: [], accounting: [], hr: [] } },
+    { id: 'baker', name: 'Baker', category: 'Kitchen', scope: 'Terminal', color: '#f59e0b',
+      perms: { pos: ['view'], inventory: ['view'], purchasing: [], accounting: [], hr: [] } },
+    // Inventory
+    { id: 'wh_mgr', name: 'Warehouse Manager', category: 'Inventory', scope: 'Warehouse', color: '#10b981',
+      perms: { pos: [], inventory: ['view','receive','transfer','adjust','count','cost'], purchasing: ['create','approve','receive','cancel'], accounting: ['view'], hr: [] } },
+    { id: 'storekeeper', name: 'Storekeeper', category: 'Inventory', scope: 'Warehouse', color: '#10b981',
+      perms: { pos: [], inventory: ['view','receive','count'], purchasing: ['receive'], accounting: [], hr: [] } },
+    { id: 'inv_ctrl', name: 'Inventory Controller', category: 'Inventory', scope: 'Global', color: '#10b981',
+      perms: { pos: [], inventory: ['view','adjust','count','cost'], purchasing: ['view'], accounting: [], hr: [] } },
+    { id: 'purch_off', name: 'Purchasing Officer', category: 'Inventory', scope: 'Global', color: '#10b981',
+      perms: { pos: [], inventory: ['view','receive'], purchasing: ['create','receive'], accounting: ['view'], hr: [] } },
+    // Finance
+    { id: 'accountant', name: 'Accountant', category: 'Finance', scope: 'Global', color: '#ec4899',
+      perms: { pos: ['view'], inventory: ['view','cost'], purchasing: ['view'], accounting: ['view','post'], hr: [] } },
+    { id: 'fin_mgr', name: 'Finance Manager', category: 'Finance', scope: 'Global', color: '#ec4899',
+      perms: { pos: ['view'], inventory: ['view','cost'], purchasing: ['approve'], accounting: ['view','post','approve_pay'], hr: [] } },
+    { id: 'auditor', name: 'Auditor', category: 'Finance', scope: 'Global', color: '#ec4899',
+      perms: { pos: ['view'], inventory: ['view','cost'], purchasing: ['view'], accounting: ['view'], hr: ['view'] } },
+    // HR
+    { id: 'hr_mgr', name: 'HR Manager', category: 'HR', scope: 'Global', color: '#8b5cf6',
+      perms: { pos: [], inventory: [], purchasing: [], accounting: ['view'], hr: ['view','edit','approve_leave','process_payroll'] } },
+    { id: 'payroll_off', name: 'Payroll Officer', category: 'HR', scope: 'Global', color: '#8b5cf6',
+      perms: { pos: [], inventory: [], purchasing: [], accounting: ['view'], hr: ['view','process_payroll'] } },
+    { id: 'recruiter', name: 'Recruiter', category: 'HR', scope: 'Global', color: '#8b5cf6',
+      perms: { pos: [], inventory: [], purchasing: [], accounting: [], hr: ['view','edit'] } },
+    // CRM
+    { id: 'sales_exec', name: 'Sales Executive', category: 'CRM', scope: 'Branch', color: '#06b6d4',
+      perms: { pos: ['view'], inventory: ['view'], purchasing: [], accounting: [], hr: [] } },
+    { id: 'mkt_mgr', name: 'Marketing Manager', category: 'CRM', scope: 'Global', color: '#06b6d4',
+      perms: { pos: ['view'], inventory: ['view'], purchasing: [], accounting: ['view'], hr: [] } },
+    { id: 'cust_svc', name: 'Customer Service', category: 'CRM', scope: 'Branch', color: '#06b6d4',
+      perms: { pos: ['view'], inventory: [], purchasing: [], accounting: [], hr: [] } },
+    // IT
+    { id: 'sys_admin', name: 'System Administrator', category: 'IT', scope: 'Global', color: '#64748b',
+      perms: { pos: ['open','close','refund','discount','void','override','drawer'], inventory: ['view','receive','transfer','adjust','count','cost'], purchasing: ['create','approve','receive','cancel'], accounting: ['view','post','approve_pay','close_period'], hr: ['view','edit','approve_leave','process_payroll'] } },
+    { id: 'helpdesk', name: 'Helpdesk', category: 'IT', scope: 'Global', color: '#64748b',
+      perms: { pos: ['view'], inventory: ['view'], purchasing: [], accounting: [], hr: ['view'] } },
+    { id: 'developer', name: 'Developer', category: 'IT', scope: 'Global', color: '#64748b',
+      perms: { pos: ['view'], inventory: ['view'], purchasing: [], accounting: ['view'], hr: [] } },
+  ];
+
+  const [iamApprovalQueue, setIamApprovalQueue] = useState([
+    { id: 'APR-001', type: 'Refund > Limit',     requestedBy: 'Nour Yassin',    amount: 120,  branch: 'Amman Main', status: 'pending',  timestamp: '2026-07-06 00:02' },
+    { id: 'APR-002', type: 'Discount > 20%',     requestedBy: 'Tarek Mansour',  amount: null, branch: 'Riyadh Hub', status: 'pending',  timestamp: '2026-07-05 23:58' },
+    { id: 'APR-003', type: 'Inventory Adjustment',requestedBy: 'Rami Al-Dmour', amount: null, branch: 'Riyadh Hub', status: 'approved', timestamp: '2026-07-05 23:40' },
+    { id: 'APR-004', type: 'PO Approval',         requestedBy: 'Hassan Barakat', amount: 4500, branch: 'Amman Main', status: 'pending',  timestamp: '2026-07-05 22:15' },
+    { id: 'APR-005', type: 'Journal Entry Post',  requestedBy: 'Diana Farhan',   amount: null, branch: '*',          status: 'pending',  timestamp: '2026-07-05 21:00' },
+    { id: 'APR-006', type: 'Payroll Approval',    requestedBy: 'Raneem Suleiman',amount: null, branch: '*',          status: 'rejected', timestamp: '2026-07-05 20:00' },
+  ]);
+
+  const [iamAuditLog, setIamAuditLog] = useState([
+    { ts: '2026-07-06 00:10', user: 'Ahmad Al-Rashidi (CEO)',    action: 'Login',                  module: 'Auth',       result: '✅ Allowed', ip: '192.168.1.1' },
+    { ts: '2026-07-06 00:05', user: 'Lina Haddad (Branch Mgr)', action: 'View Branch Report',      module: 'Analytics',  result: '✅ Allowed', ip: '192.168.1.12' },
+    { ts: '2026-07-06 00:02', user: 'Nour Yassin (Cashier)',     action: 'Request Refund $120',     module: 'POS',        result: '🔑 Pending Approval', ip: '192.168.1.45' },
+    { ts: '2026-07-06 00:01', user: 'Nour Yassin (Cashier)',     action: 'View Company Profit',     module: 'Accounting', result: '❌ Denied', ip: '192.168.1.45' },
+    { ts: '2026-07-05 23:58', user: 'Tarek Mansour (Sr Cashier)','action': 'Apply 25% Discount',   module: 'POS',        result: '🔑 Pending Approval', ip: '10.0.1.22' },
+    { ts: '2026-07-05 23:50', user: 'Tarek Mansour (Sr Cashier)','action': 'Open POS Session',     module: 'POS',        result: '✅ Allowed', ip: '10.0.1.22' },
+    { ts: '2026-07-05 22:44', user: 'Maha Al-Khalidi (CFO)',     'action': 'View P&L Report',      module: 'Accounting', result: '✅ Allowed', ip: '192.168.1.5' },
+    { ts: '2026-07-05 22:00', user: 'Rami Al-Dmour (WH Mgr)',   action: 'Receive PO Stock',        module: 'Inventory',  result: '✅ Allowed', ip: '10.0.2.11' },
+    { ts: '2026-07-05 21:00', user: 'Diana Farhan (Accountant)', action: 'Post Journal Entry',      module: 'Accounting', result: '🔑 Pending Approval', ip: '192.168.1.8' },
+    { ts: '2026-07-05 20:00', user: 'Fadi Nawaf (Cashier)',      action: 'Login Attempt',           module: 'Auth',       result: '❌ Denied (Disabled Account)', ip: '172.16.0.3' },
+  ]);
+
   // Toast notifications state
   const [toasts, setToasts] = useState([]);
 
@@ -921,6 +1111,108 @@ function App() {
       root.classList.remove('dark');
     }
   }, [theme]);
+
+  // Sync language direction
+  useEffect(() => {
+    document.body.dir = language === 'ar' ? 'rtl' : 'ltr';
+    if (language === 'ar') {
+      document.body.classList.add('rtl');
+    } else {
+      document.body.classList.remove('rtl');
+    }
+  }, [language]);
+
+  // Sync Device Mode via Hash Routing
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '').toLowerCase();
+      if (['pos', 'kds', 'waiter', 'table', 'attendance', 'warehouse', 'customer-display', 'self-order', 'manager'].includes(hash)) {
+        setDeviceMode(hash);
+      } else {
+        setDeviceMode('manager');
+      }
+    };
+    
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange(); // Init
+    
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Vertical Template Selector
+  const applyBusinessVertical = (type) => {
+    setBusinessType(type);
+    
+    let newProducts = [];
+    if (type.includes('retail') || type.includes('supermarket') || type.includes('grocery')) {
+      newProducts = [
+        { id: 'ret1', name: 'Fresh Organic Milk 1L', price: 1.85, category: 'Grocery', prepTime: '-', barcode: '628100100234' },
+        { id: 'ret2', name: 'Whole Wheat Bread', price: 1.20, category: 'Grocery', prepTime: '-', barcode: '628100100567' },
+        { id: 'ret3', name: 'Almarai Yoghurt 500g', price: 1.50, category: 'Grocery', prepTime: '-', barcode: '628100100890' },
+        { id: 'ret4', name: 'Lipton Yellow Label Tea (100 bags)', price: 4.50, category: 'Grocery', prepTime: '-', barcode: '628100100999' },
+        { id: 'ret5', name: 'Coca Cola Can 330ml', price: 2.50, category: 'Drinks', prepTime: '-', barcode: '628100100123' },
+        { id: 'ret6', name: 'Colgate Toothpaste 120ml', price: 3.50, category: 'Personal Care', prepTime: '-', barcode: '628100100456' },
+        { id: 'ret7', name: 'Ariel Powder Detergent 1.5kg', price: 8.90, category: 'Household', prepTime: '-', barcode: '628100100789' }
+      ];
+      setProducts(newProducts);
+      setInventory(newProducts.map((p, idx) => ({ product: p, stock: 150 + idx * 10, minStock: 30 })));
+      triggerToast('Supermarket template: Barcode scanning & high-volume FMCG stock count active.', 'info');
+    } else if (type.includes('fashion') || type.includes('apparel') || type.includes('boutique')) {
+      newProducts = [
+        { id: 'fas1', name: 'Classic Leather Jacket (M)', price: 85.00, category: 'Apparel', prepTime: '-', barcode: 'FAS-JAC-M' },
+        { id: 'fas2', name: 'Classic Leather Jacket (L)', price: 85.00, category: 'Apparel', prepTime: '-', barcode: 'FAS-JAC-L' },
+        { id: 'fas3', name: 'Slim Fit Denim Jeans (32)', price: 45.00, category: 'Apparel', prepTime: '-', barcode: 'FAS-JNS-32' },
+        { id: 'fas4', name: 'Slim Fit Denim Jeans (34)', price: 45.00, category: 'Apparel', prepTime: '-', barcode: 'FAS-JNS-34' },
+        { id: 'fas5', name: 'Designer Crewneck Sweatshirt', price: 55.00, category: 'Apparel', prepTime: '-', barcode: 'FAS-SWE-CRW' },
+        { id: 'fas6', name: 'Retro Canvas Sneakers (Black)', price: 65.00, category: 'Shoes', prepTime: '-', barcode: 'FAS-SH-BLK' }
+      ];
+      setProducts(newProducts);
+      setInventory(newProducts.map((p, idx) => ({ product: p, stock: 40 + idx * 5, minStock: 10 })));
+      triggerToast('Fashion & Apparel template: Variant grid & seasonal margin analytics active.', 'info');
+    } else if (type.includes('electronics')) {
+      newProducts = [
+        { id: 'ele1', name: 'ProPhone 15 Pro Max 256GB', price: 1099.00, category: 'Phones', prepTime: '-', barcode: 'ELE-PH-15PM' },
+        { id: 'ele2', name: 'SuperBook Pro 14 Inch M3', price: 1599.00, category: 'Laptops', prepTime: '-', barcode: 'ELE-LAP-SB14' },
+        { id: 'ele3', name: 'NoiseCancelling Wireless Headset', price: 249.00, category: 'Audio', prepTime: '-', barcode: 'ELE-AUD-WH' },
+        { id: 'ele4', name: 'UltraHD Smart TV 55 Inch', price: 499.00, category: 'Appliances', prepTime: '-', barcode: 'ELE-TV-55UHD' }
+      ];
+      setProducts(newProducts);
+      setInventory(newProducts.map((p, idx) => ({ product: p, stock: 15 + idx * 2, minStock: 3 })));
+      triggerToast('Electronics template: Serial/IMEI tracking, high-value supplier PO, and warranty logging active.', 'info');
+    } else if (type.includes('hardware') || type.includes('industrial')) {
+      newProducts = [
+        { id: 'hdw1', name: 'DeWalt Cordless Drill Kit', price: 129.00, category: 'Tools', prepTime: '-', barcode: 'HDW-DRL-DW' },
+        { id: 'hdw2', name: 'Premium Heavy Duty Hammer', price: 18.50, category: 'Tools', prepTime: '-', barcode: 'HDW-HMR-HD' },
+        { id: 'hdw3', name: 'Screwdriver Professional Set 12pcs', price: 24.00, category: 'Tools', prepTime: '-', barcode: 'HDW-SCR-SET' },
+        { id: 'hdw4', name: 'Copper Plumbing Pipe 1/2 Inch', price: 8.00, category: 'Materials', prepTime: '-', barcode: 'HDW-PIP-COP' }
+      ];
+      setProducts(newProducts);
+      setInventory(newProducts.map((p, idx) => ({ product: p, stock: 80 + idx * 15, minStock: 15 })));
+      triggerToast('Hardware & Tools template: Multi-bin warehousing & contractor B2B tier pricing active.', 'info');
+    } else if (type.includes('wholesale') || type.includes('distributor')) {
+      newProducts = [
+        { id: 'whl1', name: 'Arabica Coffee Beans Pallet (500kg)', price: 4500.00, category: 'FMCG Bulk', prepTime: '-', barcode: 'WHL-COF-PAL' },
+        { id: 'whl2', name: 'Matrix Iced Tea Carton (24 cans)', price: 36.00, category: 'Beverage Bulk', prepTime: '-', barcode: 'WHL-TEA-CRT' },
+        { id: 'whl3', name: 'Disposable Paper Cups (Box of 1000)', price: 42.00, category: 'Packaging Bulk', prepTime: '-', barcode: 'WHL-CUP-BOX' }
+      ];
+      setProducts(newProducts);
+      setInventory(newProducts.map((p, idx) => ({ product: p, stock: 200 + idx * 20, minStock: 50 })));
+      triggerToast('Wholesale Distribution template: Pallet warehouse stock, credit limits, and B2B pricing matrices active.', 'info');
+    } else if (type.includes('manufacturing')) {
+      newProducts = [
+        { id: 'mfg1', name: 'Finished Chocolate Box (Premium)', price: 35.00, category: 'Finished Goods', prepTime: '30 min', barcode: 'MFG-CHOC-PREM' },
+        { id: 'mfg2', name: 'Cocoa Butter (Raw Material)', price: 12.00, category: 'Raw Materials', prepTime: '-', barcode: 'MFG-BUTR-RAW' },
+        { id: 'mfg3', name: 'Sugar Crystals (Raw Material)', price: 1.50, category: 'Raw Materials', prepTime: '-', barcode: 'MFG-SUG-RAW' }
+      ];
+      setProducts(newProducts);
+      setInventory(newProducts.map((p, idx) => ({ product: p, stock: 60 + idx * 10, minStock: 20 })));
+      triggerToast('Manufacturing template: Production runs, raw material reservation, and work-order costing active.', 'info');
+    } else {
+      setProducts(initialProductsWithImages);
+      setInventory(initialProductsWithImages.map((p, idx) => ({ product: p, stock: 50 + ((idx * 8) % 45), minStock: 20 })));
+      triggerToast('F&B / Cafe template: Table layouts, waiter mobile app, and KDS kitchen queues active.', 'info');
+    }
+  };
 
   // Scroll AI messages to bottom
   useEffect(() => {
@@ -1071,6 +1363,54 @@ function App() {
     setJournalEntries(prev => [...prev, revenueJE, vatJE, cogsJE]);
   };
 
+  // Shared Stock Deduction & BOM De-Kitting Helper
+  const deductStockForItems = (items, source) => {
+    setInventory((prev) => {
+      let updatedInv = [...prev];
+      let deKittedIngredients = [];
+
+      items.forEach((item) => {
+        const bom = bomItems.find(b => b.name.toLowerCase().includes(item.product.name.toLowerCase()) || item.product.name.toLowerCase().includes(b.name.toLowerCase()));
+        
+        if (bom) {
+          bom.components.forEach((comp) => {
+            const invIndex = updatedInv.findIndex(inv => inv.product.name.toLowerCase().includes(comp.name.toLowerCase()) || comp.name.toLowerCase().includes(inv.product.name.toLowerCase()));
+            if (invIndex !== -1) {
+              const deductQty = comp.qty * item.quantity;
+              const remaining = Math.max(0, updatedInv[invIndex].stock - deductQty);
+              updatedInv[invIndex] = { ...updatedInv[invIndex], stock: remaining };
+              deKittedIngredients.push(`${deductQty}x ${comp.name}`);
+            }
+          });
+        } else {
+          const invIndex = updatedInv.findIndex(inv => inv.product.id === item.product.id);
+          if (invIndex !== -1) {
+            const remaining = Math.max(0, updatedInv[invIndex].stock - item.quantity);
+            updatedInv[invIndex] = { ...updatedInv[invIndex], stock: remaining };
+          }
+        }
+      });
+
+      if (deKittedIngredients.length > 0) {
+        setTimeout(() => {
+          triggerToast(`[BOM Auto De-Kitting] Deducted raw materials: ${deKittedIngredients.join(', ')}`, 'info');
+          setAutonomousActions(old => [
+            {
+              id: 'bom-dekitting-' + Date.now(),
+              type: 'inventory',
+              label: `Auto De-Kitting (${source}): Deducted ingredients for ${items.map(c => `${c.quantity}x ${c.product.name}`).join(', ')}`,
+              status: 'completed',
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            },
+            ...old
+          ]);
+        }, 300);
+      }
+
+      return updatedInv;
+    });
+  };
+
   // POS Checkout checkout order
   const handleCheckout = () => {
     if (cart.length === 0) {
@@ -1091,21 +1431,8 @@ function App() {
       return;
     }
 
-    setInventory((prev) =>
-      prev.map((inv) => {
-        const cartItem = cart.find((item) => item.product.id === inv.product.id);
-        if (cartItem) {
-          const remainingStock = inv.stock - cartItem.quantity;
-          if (remainingStock <= inv.minStock) {
-            setTimeout(() => {
-              triggerToast(`Low stock alert: ${inv.product.name} is down to ${remainingStock} items.`, 'error');
-            }, 800);
-          }
-          return { ...inv, stock: remainingStock };
-        }
-        return inv;
-      })
-    );
+    // Deduct stock using shared helper
+    deductStockForItems(cart, 'POS Cashier');
 
     const subtotal = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
     const taxRate = getTaxRate();
@@ -1203,6 +1530,74 @@ function App() {
     }
   };
 
+  // Simulate incoming Careem Delivery Order
+  const handleSimulateCareemOrder = () => {
+    if (!careemEnabled) {
+      triggerToast('Cannot simulate: Careem Store Channel is Offline!', 'error');
+      return;
+    }
+
+    const burgerItem = products.find((p) => p.id === 'p5') || products[4];
+    const drinkItem = products.find((p) => p.id === 'p13') || products[12];
+
+    const orderItems = [
+      { product: burgerItem, quantity: 2, price: burgerItem.price },
+      { product: drinkItem, quantity: 2, price: drinkItem.price }
+    ];
+
+    const subtotal = burgerItem.price * 2 + drinkItem.price * 2;
+    const taxRate = getTaxRate();
+    const tax = subtotal * taxRate;
+    const total = subtotal + tax;
+
+    const orderId = `ORD-${orders.length + 101}`;
+    const invoiceId = `INV-2026-${String(invoices.length + 1).padStart(3, '0')}`;
+    const timestamp = new Date().toISOString();
+
+    const newOrder = {
+      id: orderId,
+      items: orderItems,
+      total: parseFloat(total.toFixed(2)),
+      status: 'pending',
+      timestamp,
+      invoiceId,
+      country,
+      source: 'careem',
+      deliveryInfo: {
+        riderName: 'Careem Captain #291',
+        deliveryAddress: 'King Abdullah Street, Amman'
+      }
+    };
+
+    const newInvoice = {
+      id: invoiceId,
+      orderId,
+      timestamp,
+      items: orderItems,
+      subtotal: parseFloat(subtotal.toFixed(2)),
+      tax: parseFloat(tax.toFixed(2)),
+      total: parseFloat(total.toFixed(2)),
+      country,
+      source: 'careem',
+      qrData: `CyShop Careem ${country} | Inv: ${invoiceId} | VAT ID: 100239485 | Total: ${total.toFixed(2)} ${getCurrency()}`
+    };
+
+    // Deduct stock using shared helper
+    deductStockForItems(orderItems, 'Careem Delivery');
+
+    setOrders((prev) => [newOrder, ...prev]);
+    setInvoices((prev) => [newInvoice, ...prev]);
+    recordCheckoutJournalEntries('careem', subtotal, tax, invoiceId, orderItems);
+    setSelectedInvoiceId(invoiceId);
+
+    triggerToast(`New Careem Order ${orderId} Auto-Accepted & Dispatched to KDS!`, 'success');
+    confetti({
+      particleCount: 80,
+      spread: 50,
+      colors: ['#00c853', '#ffffff']
+    });
+  };
+
   // Simulate incoming Talabat Delivery Order
   const handleSimulateTalabatOrder = () => {
     if (!talabatConnected) {
@@ -1258,16 +1653,8 @@ function App() {
       } | Total: ${total.toFixed(2)} ${getCurrency()}`
     };
 
-    // Deduct stock
-    setInventory((prev) =>
-      prev.map((inv) => {
-        const oItem = orderItems.find((item) => item.product.id === inv.product.id);
-        if (oItem) {
-          return { ...inv, stock: Math.max(0, inv.stock - oItem.quantity) };
-        }
-        return inv;
-      })
-    );
+    // Deduct stock using shared helper
+    deductStockForItems(orderItems, 'Talabat Delivery');
 
     setOrders((prev) => [newOrder, ...prev]);
     setInvoices((prev) => [newInvoice, ...prev]);
@@ -1723,6 +2110,25 @@ function App() {
   const handleSendMessage = () => {
     if (!chatInput.trim()) return;
 
+    // ── CyIdentity ABAC: AI Permission Gate ──────────────────────────
+    const _q = chatInput.toLowerCase();
+    const _financialKw = ['profit', 'revenue', 'salary', 'payroll', 'balance sheet', 'p&l', 'net income', 'cash flow', 'financial report', 'company profit', 'total revenue', 'journal'];
+    const _isFinancialQuery = _financialKw.some(kw => _q.includes(kw));
+    const _privilegedRoles = ['CEO', 'CFO', 'COO', 'Finance Manager', 'Accountant', 'Auditor', 'System Administrator'];
+    const _hasFinancialScope = currentUser.scopes.includes('*') || _privilegedRoles.includes(currentUser.role);
+    if (_isFinancialQuery && !_hasFinancialScope) {
+      setChatMessages(prev => [...prev.slice(-30), {
+        sender: 'assistant',
+        text: '\u274c **Access Denied — CyIdentity ABAC Policy**\n\nYour current role (**' + currentUser.role + '**) does not have permission to access financial reports or company-wide financial data.\n\n- **Required scope:** `financial_data`\n- **Your scope:** `' + (currentUser.branch === '*' ? 'global (non-financial)' : currentUser.branch + ' branch only') + '`\n\nPlease contact your **Finance Manager** or **System Administrator** for access.\n\n*Ref: CyIdentity Policy Engine — Event logged to Audit Trail.*',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
+      setIamAuditLog(prev => [{ ts: new Date().toLocaleString(), user: currentUser.name + ' (' + currentUser.role + ')', action: 'CyAI Query (BLOCKED): ' + chatInput.slice(0, 60), module: 'CyAI', result: 'Denied (scope: financial_data)', ip: '192.168.x.x' }, ...prev]);
+      setChatInput('');
+      setChatTyping(false);
+      return;
+    }
+    // ─────────────────────────────────────────────────────────────────
+
     const userMsg = {
       sender: 'user',
       text: chatInput,
@@ -1795,12 +2201,23 @@ function App() {
 
   // Filter products by active tab categories and top search
   const filteredProducts = products.filter((p) => {
+    if (p.category === 'Raw Materials' || p.pos_available === false) return false;
     const matchCat = posCategory === 'All' || p.category === posCategory;
     const matchSearch =
       p.name.toLowerCase().includes(globalSearch.toLowerCase()) ||
       p.category.toLowerCase().includes(globalSearch.toLowerCase());
     return matchCat && matchSearch;
   });
+
+  // Fullscreen Device Modes Rendering Switch
+  if (deviceMode === 'pos') return renderPOSScreen();
+  if (deviceMode === 'kds') return renderKDSScreen();
+  if (deviceMode === 'waiter') return renderWaiterScreen();
+  if (deviceMode === 'table') return renderTableScreen();
+  if (deviceMode === 'attendance') return renderAttendanceScreen();
+  if (deviceMode === 'warehouse') return renderWarehouseScreen();
+  if (deviceMode === 'customer-display') return renderCustomerDisplayScreen();
+  if (deviceMode === 'self-order') return renderSelfOrderScreen();
 
   return (
     <div className="app-container">
@@ -1848,7 +2265,7 @@ function App() {
             style={{ border: 'none', background: 'none', textAlign: 'left', width: '100%' }}
           >
             <LayoutDashboard size={18} />
-            {!sidebarCollapsed && <span style={{ color: activeTab === 'dashboard' ? 'var(--primary-color)' : 'var(--text-muted)' }}>Dashboard</span>}
+            {!sidebarCollapsed && <span style={{ color: activeTab === 'dashboard' ? 'var(--primary-color)' : 'var(--text-muted)' }}>{getMenuLabel('dashboard')}</span>}
           </button>
 
           <button
@@ -1857,7 +2274,7 @@ function App() {
             style={{ border: 'none', background: 'none', textAlign: 'left', width: '100%' }}
           >
             <ShoppingBag size={18} />
-            {!sidebarCollapsed && <span style={{ color: activeTab === 'pos' ? 'var(--primary-color)' : 'var(--text-muted)' }}>POS Cashier</span>}
+            {!sidebarCollapsed && <span style={{ color: activeTab === 'pos' ? 'var(--primary-color)' : 'var(--text-muted)' }}>{getMenuLabel('pos')}</span>}
           </button>
 
           <button
@@ -1884,7 +2301,7 @@ function App() {
             style={{ border: 'none', background: 'none', textAlign: 'left', width: '100%' }}
           >
             <Package size={18} />
-            {!sidebarCollapsed && <span style={{ color: activeTab === 'inventory' ? 'var(--primary-color)' : 'var(--text-muted)' }}>Inventory</span>}
+            {!sidebarCollapsed && <span style={{ color: activeTab === 'inventory' ? 'var(--primary-color)' : 'var(--text-muted)' }}>{getMenuLabel('inventory')}</span>}
           </button>
 
           <button
@@ -1893,7 +2310,7 @@ function App() {
             style={{ border: 'none', background: 'none', textAlign: 'left', width: '100%' }}
           >
             <Users size={18} />
-            {!sidebarCollapsed && <span style={{ color: activeTab === 'customers' ? 'var(--primary-color)' : 'var(--text-muted)' }}>CRM Loyalty</span>}
+            {!sidebarCollapsed && <span style={{ color: activeTab === 'customers' ? 'var(--primary-color)' : 'var(--text-muted)' }}>{getMenuLabel('customers')}</span>}
           </button>
 
           <button
@@ -1902,7 +2319,7 @@ function App() {
             style={{ border: 'none', background: 'none', textAlign: 'left', width: '100%' }}
           >
             <ReceiptText size={18} />
-            {!sidebarCollapsed && <span style={{ color: activeTab === 'invoices' ? 'var(--primary-color)' : 'var(--text-muted)' }}>Invoices & VAT</span>}
+            {!sidebarCollapsed && <span style={{ color: activeTab === 'invoices' ? 'var(--primary-color)' : 'var(--text-muted)' }}>{getMenuLabel('invoices')}</span>}
           </button>
 
           <button
@@ -1911,7 +2328,7 @@ function App() {
             style={{ border: 'none', background: 'none', textAlign: 'left', width: '100%' }}
           >
             <Calendar size={18} />
-            {!sidebarCollapsed && <span style={{ color: activeTab === 'shifts' ? 'var(--primary-color)' : 'var(--text-muted)' }}>Staff Shifts</span>}
+            {!sidebarCollapsed && <span style={{ color: activeTab === 'shifts' ? 'var(--primary-color)' : 'var(--text-muted)' }}>{getMenuLabel('shifts')}</span>}
           </button>
 
           <button
@@ -1920,7 +2337,7 @@ function App() {
             style={{ border: 'none', background: 'none', textAlign: 'left', width: '100%' }}
           >
             <BarChart3 size={18} />
-            {!sidebarCollapsed && <span style={{ color: activeTab === 'analytics' ? 'var(--primary-color)' : 'var(--text-muted)' }}>Analytics</span>}
+            {!sidebarCollapsed && <span style={{ color: activeTab === 'analytics' ? 'var(--primary-color)' : 'var(--text-muted)' }}>{getMenuLabel('analytics')}</span>}
           </button>
 
           <button
@@ -1929,7 +2346,7 @@ function App() {
             style={{ border: 'none', background: 'none', textAlign: 'left', width: '100%' }}
           >
             <Store size={18} />
-            {!sidebarCollapsed && <span style={{ color: activeTab === 'kiosk' ? 'var(--primary-color)' : 'var(--text-muted)' }}>Kiosk & QR Menu</span>}
+            {!sidebarCollapsed && <span style={{ color: activeTab === 'kiosk' ? 'var(--primary-color)' : 'var(--text-muted)' }}>{getMenuLabel('kiosk')}</span>}
           </button>
 
           <button
@@ -1938,8 +2355,23 @@ function App() {
             style={{ border: 'none', background: 'none', textAlign: 'left', width: '100%' }}
           >
             <Users size={18} />
-            {!sidebarCollapsed && <span style={{ color: activeTab === 'hr' ? 'var(--primary-color)' : 'var(--text-muted)' }}>HR Management</span>}
+            {!sidebarCollapsed && <span style={{ color: activeTab === 'hr' ? 'var(--primary-color)' : 'var(--text-muted)' }}>{getMenuLabel('hr')}</span>}
           </button>
+
+          <button
+            onClick={() => setActiveTab('iam')}
+            className={`sidebar-item ${activeTab === 'iam' ? 'active' : ''}`}
+            style={{ border: 'none', background: 'none', textAlign: 'left', width: '100%' }}
+          >
+            <ShieldCheck size={18} />
+            {!sidebarCollapsed && (
+              <span style={{ color: activeTab === 'iam' ? 'var(--primary-color)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                IAM / Users
+                <span className="badge" style={{ fontSize: '9px', padding: '1px 4px', background: 'rgba(255,109,0,0.15)', color: 'var(--primary-color)', border: '1px solid rgba(255,109,0,0.3)' }}>RBAC</span>
+              </span>
+            )}
+          </button>
+
 
           <button
             onClick={() => setActiveTab('attendance')}
@@ -1947,7 +2379,7 @@ function App() {
             style={{ border: 'none', background: 'none', textAlign: 'left', width: '100%' }}
           >
             <Calendar size={18} />
-            {!sidebarCollapsed && <span style={{ color: activeTab === 'attendance' ? 'var(--primary-color)' : 'var(--text-muted)' }}>Attendance</span>}
+            {!sidebarCollapsed && <span style={{ color: activeTab === 'attendance' ? 'var(--primary-color)' : 'var(--text-muted)' }}>{getMenuLabel('attendance')}</span>}
           </button>
 
           <button
@@ -1956,7 +2388,7 @@ function App() {
             style={{ border: 'none', background: 'none', textAlign: 'left', width: '100%' }}
           >
             <ArrowUpRight size={18} />
-            {!sidebarCollapsed && <span style={{ color: activeTab === 'payroll' ? 'var(--primary-color)' : 'var(--text-muted)' }}>Payroll</span>}
+            {!sidebarCollapsed && <span style={{ color: activeTab === 'payroll' ? 'var(--primary-color)' : 'var(--text-muted)' }}>{getMenuLabel('payroll')}</span>}
           </button>
 
           <button
@@ -1965,7 +2397,7 @@ function App() {
             style={{ border: 'none', background: 'none', textAlign: 'left', width: '100%' }}
           >
             <ReceiptText size={18} />
-            {!sidebarCollapsed && <span style={{ color: activeTab === 'accounting' ? 'var(--primary-color)' : 'var(--text-muted)' }}>Accounting</span>}
+            {!sidebarCollapsed && <span style={{ color: activeTab === 'accounting' ? 'var(--primary-color)' : 'var(--text-muted)' }}>{getMenuLabel('accounting')}</span>}
           </button>
 
           <button
@@ -1974,7 +2406,7 @@ function App() {
             style={{ border: 'none', background: 'none', textAlign: 'left', width: '100%' }}
           >
             <Package size={18} />
-            {!sidebarCollapsed && <span style={{ color: activeTab === 'bom' ? 'var(--primary-color)' : 'var(--text-muted)' }}>BOM & Kits</span>}
+            {!sidebarCollapsed && <span style={{ color: activeTab === 'bom' ? 'var(--primary-color)' : 'var(--text-muted)' }}>{getMenuLabel('bom')}</span>}
           </button>
 
           <button
@@ -1983,7 +2415,7 @@ function App() {
             style={{ border: 'none', background: 'none', textAlign: 'left', width: '100%' }}
           >
             <Bike size={18} />
-            {!sidebarCollapsed && <span style={{ color: activeTab === 'supply' ? 'var(--primary-color)' : 'var(--text-muted)' }}>Supply Chain</span>}
+            {!sidebarCollapsed && <span style={{ color: activeTab === 'supply' ? 'var(--primary-color)' : 'var(--text-muted)' }}>{getMenuLabel('supply')}</span>}
           </button>
 
           <button
@@ -1993,7 +2425,7 @@ function App() {
           >
             <ShieldCheck size={18} />
             {!sidebarCollapsed && (
-              <span style={{ color: activeTab === 'setup' ? 'var(--primary-color)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: activeTab === 'setup' ? 'var(--primary-color)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>{!sidebarCollapsed && getMenuLabel('setup')}
                 Setup Wizard
                 <span className="badge badge-warning" style={{ fontSize: '9px', padding: '1px 4px' }}>NEW</span>
               </span>
@@ -2021,7 +2453,7 @@ function App() {
             style={{ border: 'none', background: 'none', textAlign: 'left', width: '100%' }}
           >
             <SettingsIcon size={18} />
-            {!sidebarCollapsed && <span style={{ color: activeTab === 'settings' ? 'var(--primary-color)' : 'var(--text-muted)' }}>Settings</span>}
+            {!sidebarCollapsed && <span style={{ color: activeTab === 'settings' ? 'var(--primary-color)' : 'var(--text-muted)' }}>{getMenuLabel('settings')}</span>}
           </button>
         </nav>
 
@@ -2071,6 +2503,30 @@ function App() {
           </div>
 
           <div className="header-right">
+            {/* Device Mode Switcher */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)' }}>Device Mode:</span>
+              <select
+                className="select"
+                style={{ width: '150px', height: '32px', fontSize: '12px', padding: '0 8px', color: 'var(--text-primary)', border: '1px solid var(--primary-border)', borderRadius: '6px' }}
+                value={deviceMode}
+                onChange={(e) => {
+                  setDeviceMode(e.target.value);
+                  window.location.hash = e.target.value === 'manager' ? '' : `#${e.target.value}`;
+                  triggerToast(`Switched to ${e.target.value.toUpperCase()} view`, 'info');
+                }}
+              >
+                <option value="manager">📊 ERP Manager</option>
+                <option value="pos">🖥 POS Cashier</option>
+                <option value="kds">🍳 KDS Kitchen</option>
+                <option value="waiter">📋 Waiter App</option>
+                <option value="table">📱 Table QR Order</option>
+                <option value="attendance">🕒 Clock Terminal</option>
+                <option value="warehouse">📦 Warehouse Scanner</option>
+                <option value="customer-display">📺 Cust Display</option>
+                <option value="self-order">🛎 Self Kiosk</option>
+              </select>
+            </div>
             {/* Talabat Connection Status Indicator */}
             <div
               className="badge"
@@ -2090,6 +2546,19 @@ function App() {
               <Bike size={13} />
               <span>Talabat: {talabatConnected ? 'Online' : 'Offline'}</span>
             </div>
+
+            {/* Language Switcher */}
+            <button
+              className="btn btn-secondary"
+              style={{ padding: '6px 12px', fontSize: '12.5px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-primary)' }}
+              onClick={() => {
+                const nextLang = language === 'en' ? 'ar' : 'en';
+                setLanguage(nextLang);
+                triggerToast(nextLang === 'ar' ? 'تم تحويل النظام إلى اللغة العربية' : 'System toggled to English', 'info');
+              }}
+            >
+              🌐 {language === 'en' ? 'العربية' : 'English'}
+            </button>
 
             {/* Country flag switcher */}
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -3029,7 +3498,10 @@ function App() {
                         <button
                           className="btn btn-secondary"
                           style={{ padding: '6px 12px', fontSize: '12px', color: 'var(--text-primary)' }}
-                          onClick={() => triggerToast(`Printing thermal invoice ${invoice.id}...`, 'info')}
+                          onClick={() => {
+                            setPrintingInvoice(invoice);
+                            setShowPrinterModal(true);
+                          }}
                         >
                           Print Thermal
                         </button>
@@ -3159,6 +3631,39 @@ function App() {
         {/* Analytics Tab */}
         {activeTab === 'analytics' && (
           <main className="page-content">
+            {/* CEO Global Consolidated Performance Overview */}
+            <div className="card" style={{ marginBottom: '24px', borderLeft: '4px solid var(--ai-glow-color)' }}>
+              <h3 style={{ fontWeight: '800', color: 'var(--text-primary)', marginBottom: '4px' }}>🌍 Global Consolidated Performance (Corporate Base: USD)</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>Comparison of branch performance and e-invoice counts across all jurisdictions.</p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+                {[
+                  { branch: 'Riyadh Branch (🇸🇦 KSA)', sales: 14280.00, count: 245, vat: '15%', progress: '75%' },
+                  { branch: 'Amman Branch (🇯🇴 Jordan)', sales: 8450.00, count: 188, vat: '16%', progress: '52%' },
+                  { branch: 'Dubai Branch (🇦🇪 UAE)', sales: 18600.00, count: 310, vat: '5%', progress: '92%' },
+                  { branch: 'London Branch (🇬🇧 UK)', sales: 22400.00, count: 388, vat: '20%', progress: '98%' }
+                ].map((b, idx) => (
+                  <div key={idx} style={{ background: 'var(--bg-card-hover)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                    <div style={{ fontWeight: '700', fontSize: '13.5px', color: 'var(--text-primary)', marginBottom: '8px' }}>{b.branch}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Revenue (USD)</span>
+                      <strong style={{ color: 'var(--success-color)' }}>${b.sales.toLocaleString()}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Sales Count</span>
+                      <strong style={{ color: 'var(--text-primary)' }}>{b.count} invoices</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '10px' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Tax Rate</span>
+                      <strong style={{ color: 'var(--warning-color)' }}>{b.vat} VAT</strong>
+                    </div>
+                    <div className="sparkline-track" style={{ height: '4px' }}>
+                      <div className="sparkline-fill" style={{ width: b.progress, backgroundColor: 'var(--primary-color)' }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
             {/* Sales Channel Share Progress Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
               <div className="card">
@@ -5174,6 +5679,13 @@ function App() {
                           ['Base Salary', `${(selectedEmployee.baseSalary || 0).toLocaleString()} ${getCurrency()}`]
                         ]),
                         ['Allowances', `${(selectedEmployee.allowances || 0).toLocaleString()} ${getCurrency()}`],
+                        ['GCC Document Expiry', ''],
+                        ['Iqama / Work Permit', 'Valid (Expires 2027-02-15) 🟢'],
+                        ['Passport Expiry', 'Valid (Expires 2029-08-11) 🟢'],
+                        ['Labor Card Status', 'Valid (Expires 2026-12-10) 🟢'],
+                        ['Social Security Code', ''],
+                        ['KSA GOSI Config', 'Employer: 12.0% | Employee: 9.75% (21.75% Total)'],
+                        ['Jordan SSC Config', 'Employer: 14.25% | Employee: 7.5% (21.75% Total)'],
                         ['Health Premium', `${(selectedEmployee.healthPremium || 0).toLocaleString()} ${getCurrency()} (Employer: ${selectedEmployee.employerHealthShare || 0}%)`],
                         ['Total CTC', selectedEmployee.contractType === 'Hourly' ? 'Hourly (based on work logs)' : `${Math.round((selectedEmployee.baseSalary + selectedEmployee.allowances) * 1.1425 + (selectedEmployee.healthPremium * selectedEmployee.employerHealthShare / 100)).toLocaleString()} ${getCurrency()}/mo`],
                         ['Leave Balance', `${selectedEmployee.leaveBalance} days`]
@@ -6071,6 +6583,50 @@ function App() {
 
                   </div>
 
+                  {/* Multi-Currency consolidation panel */}
+                  <div className="card" style={{ marginBottom: '24px' }}>
+                    <h3 style={{ fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px' }}>💱 Global Multi-Currency FX Ledger Consolidation</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '16px', alignItems: 'center' }}>
+                      <div>
+                        <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+                          Select a base currency to translate and consolidate all global financial ledgers. Current branches operate in 🇸🇦 SAR, 🇯🇴 JOD, 🇦🇪 AED, and 🇬🇧 GBP.
+                        </p>
+                      </div>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontSize: '11px' }}>Consolidation Base Currency</label>
+                        <select className="select" style={{ color: 'var(--text-primary)' }} value={reportingCurrency} onChange={e => {
+                          setReportingCurrency(e.target.value);
+                          triggerToast(`Consolidation reporting currency set to ${e.target.value}`, 'info');
+                        }}>
+                          <option value="USD">USD ($) - Corporate Base</option>
+                          <option value="SAR">SAR (🇸🇦) - Saudi Branch</option>
+                          <option value="JOD">JOD (🇯🇴) - Jordan Branch</option>
+                          <option value="AED">AED (🇦🇪) - UAE Branch</option>
+                          <option value="GBP">GBP (🇬🇧) - UK Branch</option>
+                        </select>
+                      </div>
+                      <button className="btn btn-ai" style={{ height: '42px' }} onClick={() => {
+                        triggerToast(`Loading ledger sheets for Riyadh, Amman, Dubai, and London...`, 'info');
+                        setTimeout(() => {
+                          triggerToast(`Successfully translated all FX ledgers into consolidated ${reportingCurrency} statement!`, 'success');
+                          confetti({ particleCount: 100, spread: 80 });
+                        }, 1200);
+                      }}>
+                        Run FX Consolidation
+                      </button>
+                    </div>
+                    <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '16px', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', letterSpacing: '0.05em' }}>LIVE FX RATES (Corporate Standard Base USD):</span>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', textAlign: 'center', fontSize: '11.5px' }}>
+                        <div style={{ background: 'var(--bg-card-hover)', padding: '6px', borderRadius: '6px', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>1 USD = 1.00 USD</div>
+                        <div style={{ background: 'var(--bg-card-hover)', padding: '6px', borderRadius: '6px', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>1 JOD = 1.41 USD</div>
+                        <div style={{ background: 'var(--bg-card-hover)', padding: '6px', borderRadius: '6px', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>1 SAR = 0.27 USD</div>
+                        <div style={{ background: 'var(--bg-card-hover)', padding: '6px', borderRadius: '6px', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>1 AED = 0.27 USD</div>
+                        <div style={{ background: 'var(--bg-card-hover)', padding: '6px', borderRadius: '6px', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>1 GBP = 1.28 USD</div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* VAT Summary and Actions */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                     <div className="card">
@@ -6228,9 +6784,9 @@ function App() {
             </div>
 
             <div className="tabs-container">
-              {['vendors', 'orders', 'create-po'].map(tab => (
+              {['vendors', 'orders', 'create-po', 'transfers'].map(tab => (
                 <button key={tab} className={`tab-btn ${supplyTab === tab ? 'active' : ''}`} onClick={() => setSupplyTab(tab)}>
-                  {tab === 'vendors' ? '🏭 Vendors' : tab === 'orders' ? '📋 Purchase Orders' : '➕ Create PO'}
+                  {tab === 'vendors' ? '🏭 Vendors' : tab === 'orders' ? '📋 Purchase Orders' : tab === 'create-po' ? '➕ Create PO' : '🚚 Inter-Branch Transfers'}
                 </button>
               ))}
             </div>
@@ -6331,6 +6887,106 @@ function App() {
               </div>
             )}
 
+            {supplyTab === 'transfers' && (
+              <div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
+                  {/* Left Form: Initiate Transfer */}
+                  <div className="card">
+                    <h3 style={{ fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px' }}>🚚 Dispatch Inter-Branch Stock</h3>
+                    <div className="form-group">
+                      <label className="form-label">From Warehouse (Source Branch)</label>
+                      <select className="select" style={{ color: 'var(--text-primary)' }} value={newTransferFrom} onChange={e => setNewTransferFrom(e.target.value)}>
+                        <option value="Riyadh Main">Riyadh Main Warehouse (🇸🇦)</option>
+                        <option value="Amman Hub">Amman Hub Warehouse (🇯🇴)</option>
+                        <option value="Dubai Freezone">Dubai Freezone Warehouse (🇦🇪)</option>
+                        <option value="London Center">London Center Warehouse (🇬🇧)</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">To Warehouse (Destination Branch)</label>
+                      <select className="select" style={{ color: 'var(--text-primary)' }} value={newTransferTo} onChange={e => setNewTransferTo(e.target.value)}>
+                        <option value="Amman Hub">Amman Hub Warehouse (🇯🇴)</option>
+                        <option value="Riyadh Main">Riyadh Main Warehouse (🇸🇦)</option>
+                        <option value="Dubai Freezone">Dubai Freezone Warehouse (🇦🇪)</option>
+                        <option value="London Center">London Center Warehouse (🇬🇧)</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Select Raw Material / Product</label>
+                      <select className="select" style={{ color: 'var(--text-primary)' }} value={newTransferProd} onChange={e => setNewTransferProd(e.target.value)}>
+                        {products.filter(p => p.category === 'Raw Materials').map(p => (
+                          <option key={p.id} value={p.name}>{p.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Quantity to Transfer</label>
+                      <input className="input" type="number" style={{ color: 'var(--text-primary)' }} value={newTransferQty} onChange={e => setNewTransferQty(e.target.value)} placeholder="e.g. 50" />
+                    </div>
+                    <button className="btn btn-primary" style={{ width: '100%', marginTop: '12px' }} onClick={() => {
+                      if (!newTransferQty || parseFloat(newTransferQty) <= 0) { triggerToast('Please enter a valid quantity', 'error'); return; }
+                      if (newTransferFrom === newTransferTo) { triggerToast('Source and destination warehouses must be different', 'error'); return; }
+                      const newT = {
+                        id: `TRF-${String(interBranchTransfers.length + 1).padStart(3, '0')}`,
+                        from: newTransferFrom,
+                        to: newTransferTo,
+                        product: newTransferProd,
+                        qty: parseFloat(newTransferQty),
+                        status: 'In Transit',
+                        date: today
+                      };
+                      setInterBranchTransfers(prev => [newT, ...prev]);
+                      setNewTransferQty('');
+                      triggerToast(`Inter-branch stock transfer ${newT.id} successfully dispatched! Customs papers generated.`, 'success');
+                      confetti({ particleCount: 50, spread: 40 });
+                    }}>
+                      Dispatch Inventory Shipment
+                    </button>
+                  </div>
+
+                  {/* Right Table: Transfer Logs */}
+                  <div className="card">
+                    <h3 style={{ fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px' }}>📋 Inter-Branch Transit Logs</h3>
+                    <div className="table-container" style={{ border: 'none', margin: 0 }}>
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Transfer ID</th><th>Date</th><th>Item</th><th>Qty</th><th>Route</th><th>Status</th><th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {interBranchTransfers.map(t => (
+                            <tr key={t.id}>
+                              <td style={{ fontWeight: '700', color: 'var(--primary-color)' }}>{t.id}</td>
+                              <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t.date}</td>
+                              <td style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{t.product}</td>
+                              <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>{t.qty}</td>
+                              <td style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.from} → {t.to}</td>
+                              <td>
+                                <span className={`badge ${t.status === 'Completed' ? 'badge-success' : 'badge-warning'}`}>
+                                  {t.status}
+                                </span>
+                              </td>
+                              <td>
+                                {t.status === 'In Transit' ? (
+                                  <button className="btn btn-success" style={{ fontSize: '11px', padding: '3px 8px' }} onClick={() => {
+                                    setInterBranchTransfers(prev => prev.map(p => p.id === t.id ? { ...p, status: 'Completed' } : p));
+                                    triggerToast(`Shipment ${t.id} customs cleared and received at ${t.to}!`, 'success');
+                                  }}>Receive</button>
+                                ) : (
+                                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>No Action</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {supplyTab === 'create-po' && (
               <div style={{ maxWidth: '700px', margin: '0 auto' }}>
                 <div className="card">
@@ -6392,6 +7048,462 @@ function App() {
         {/* ═══════════════════════════════════════════════════════════
             SETUP WIZARD MODULE
         ═══════════════════════════════════════════════════════════ */}
+
+        {/* ═══════════════════════════════════════════════════════════
+            CYIDENTITY ENTERPRISE IAM MODULE
+        ═══════════════════════════════════════════════════════════ */}
+        {activeTab === 'iam' && (() => {
+          const PERM_LABELS = {
+            pos: { open:'Open Session', close:'Close Session', refund:'Refund', discount:'Apply Discount', void:'Void Order', override:'Override Price', drawer:'Cash Drawer', view:'View POS' },
+            inventory: { view:'View Stock', receive:'Receive Stock', transfer:'Transfer', adjust:'Adjust', count:'Count', cost:'View Cost Prices' },
+            purchasing: { create:'Create PO', approve:'Approve PO', receive:'Receive Goods', cancel:'Cancel PO', view:'View POs' },
+            accounting: { view:'View Financials', post:'Post Journal', approve_pay:'Approve Payments', close_period:'Close Period' },
+            hr: { view:'View Employees', edit:'Edit Employees', approve_leave:'Approve Leave', process_payroll:'Process Payroll' },
+          };
+          const CATS = ['All','Executive','Operations','Sales','Kitchen','Inventory','Finance','HR','CRM','IT'];
+          const filteredUsers = iamUsers.filter(u =>
+            (u.name.toLowerCase().includes(iamSearchQuery.toLowerCase()) ||
+             u.email.toLowerCase().includes(iamSearchQuery.toLowerCase()) ||
+             u.role.toLowerCase().includes(iamSearchQuery.toLowerCase()))
+          );
+          const filteredRoles = IAM_ROLES.filter(r => iamRoleFilter === 'All' || r.category === iamRoleFilter);
+
+          return (
+            <main className="page-content">
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                <div>
+                  <h2 style={{ fontSize: '20px', fontWeight: '900', color: 'var(--text-primary)', marginBottom: '4px' }}>CyIdentity &mdash; Enterprise IAM</h2>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Identity &amp; Access Management &middot; RBAC + ABAC &middot; Org Hierarchy &middot; Approval Matrix &middot; Audit Trail</p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div className="card" style={{ padding: '8px 14px', display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Active persona:</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--brand-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '11px', fontWeight: '700' }}>
+                        {currentUser.name.split(' ').map(n=>n[0]).join('').slice(0,2)}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)' }}>{currentUser.name}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--primary-color)', fontWeight: '600' }}>{currentUser.role} &middot; {currentUser.branch === '*' ? 'Global' : currentUser.branch}</div>
+                      </div>
+                    </div>
+                    <select className="select" style={{ fontSize: '11px', height: '28px', padding: '0 8px', color: 'var(--text-primary)' }}
+                      value={currentUser.id}
+                      onChange={e => { const u = iamUsers.find(x=>x.id===e.target.value); if(u) { setCurrentUser({...u, scopes: u.branch === '*' ? ['*'] : [u.branch]}); triggerToast('Persona switched to: ' + u.name + ' (' + u.role + ')', 'info'); } }}>
+                      {iamUsers.filter(u=>u.status==='active').map(u=>(
+                        <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sub-tab Navigation */}
+              <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', background: 'var(--bg-card)', padding: '4px', borderRadius: '10px', width: 'fit-content', border: '1px solid var(--border-color)' }}>
+                {[
+                  ['users','Users'],['org','Org Hierarchy'],['roles','Roles & Templates'],
+                  ['permissions','Permissions Matrix'],['approvals','Approvals'],['audit','Audit Trail'],['security','Security']
+                ].map(([k,l]) => (
+                  <button key={k} onClick={()=>setIamTab(k)}
+                    style={{ padding: '6px 14px', fontSize: '12px', fontWeight: '600', border: 'none', borderRadius: '7px', cursor: 'pointer',
+                      background: iamTab === k ? 'var(--primary-color)' : 'transparent',
+                      color: iamTab === k ? '#ffffff' : 'var(--text-muted)' }}>
+                    {l}
+                    {k==='approvals' && iamApprovalQueue.filter(a=>a.status==='pending').length > 0 && (
+                      <span style={{ marginLeft: '5px', background: '#ef4444', color:'white', borderRadius:'8px', padding:'0 5px', fontSize:'9px', fontWeight: '700' }}>
+                        {iamApprovalQueue.filter(a=>a.status==='pending').length}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* TAB: USERS */}
+              {iamTab === 'users' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input className="input" placeholder="Search by name, email, or role..." style={{ color: 'var(--text-primary)', width: '300px' }}
+                      value={iamSearchQuery} onChange={e=>setIamSearchQuery(e.target.value)} />
+                    <button className="btn btn-primary" onClick={()=>{ setIamSelectedUser(null); setIamUserModal(true); }}>+ Invite User</button>
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', fontSize: '12px' }}>
+                      <span className="badge badge-success">{iamUsers.filter(u=>u.status==='active').length} Active</span>
+                      <span className="badge badge-danger">{iamUsers.filter(u=>u.status==='disabled').length} Disabled</span>
+                      <span className="badge badge-warning">{iamUsers.filter(u=>u.mfaEnabled).length} MFA Enabled</span>
+                    </div>
+                  </div>
+                  <div className="card" style={{ padding: 0, overflow: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ background: 'var(--bg-card-hover)', borderBottom: '1px solid var(--border-color)' }}>
+                          {['User','Role','Category','Branch / Scope','Status','MFA','Sessions','Last Login','Actions'].map(h=>(
+                            <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredUsers.map((u, idx) => {
+                          const roleColor = IAM_ROLES.find(r=>r.name===u.role)?.color || 'var(--primary-color)';
+                          return (
+                            <tr key={u.id} style={{ borderBottom: '1px solid var(--border-color)', background: idx%2===0?'transparent':'var(--bg-card-hover)' }}>
+                              <td style={{ padding: '10px 14px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: roleColor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '11px', fontWeight: '700', flexShrink: 0 }}>
+                                    {u.name.split(' ').map(n=>n[0]).join('').slice(0,2)}
+                                  </div>
+                                  <div>
+                                    <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>{u.name}</div>
+                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{u.email}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td style={{ padding: '10px 14px', fontSize: '12px', color: 'var(--text-primary)', fontWeight: '600', whiteSpace: 'nowrap' }}>{u.role}</td>
+                              <td style={{ padding: '10px 14px' }}>
+                                <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: roleColor + '22', color: roleColor, fontWeight: '700' }}>{u.category}</span>
+                              </td>
+                              <td style={{ padding: '10px 14px', fontSize: '12px', color: 'var(--text-muted)' }}>{u.branch === '*' ? 'Global' : u.branch}</td>
+                              <td style={{ padding: '10px 14px' }}>
+                                <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', fontWeight: '700',
+                                  background: u.status==='active' ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
+                                  color: u.status==='active' ? '#10b981' : '#ef4444' }}>
+                                  {u.status === 'active' ? 'Active' : 'Disabled'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '10px 14px', textAlign: 'center' }}>{u.mfaEnabled ? <span style={{color:'#10b981', fontWeight:'700', fontSize:'11px'}}>ON</span> : <span style={{color:'var(--text-muted)', fontSize:'11px'}}>OFF</span>}</td>
+                              <td style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', color: u.sessions>0?'#10b981':'var(--text-muted)', fontWeight: '600' }}>{u.sessions}</td>
+                              <td style={{ padding: '10px 14px', fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{u.lastLogin}</td>
+                              <td style={{ padding: '10px 14px' }}>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                  <button className="btn btn-secondary" style={{ fontSize: '10px', padding: '3px 8px', color: 'var(--text-primary)' }}
+                                    onClick={()=>{ setIamSelectedUser(u); setIamUserModal(true); }}>Edit</button>
+                                  <button className="btn btn-secondary" style={{ fontSize: '10px', padding: '3px 8px', color: u.status==='active'?'#ef4444':'#10b981' }}
+                                    onClick={()=>{
+                                      setIamUsers(prev=>prev.map(x=>x.id===u.id?{...x,status:x.status==='active'?'disabled':'active'}:x));
+                                      setIamAuditLog(prev=>[{ ts: new Date().toLocaleString(), user: currentUser.name + ' (' + currentUser.role + ')', action: (u.status==='active'?'Disable':'Enable') + ' Account: ' + u.name, module:'IAM', result:'Allowed', ip:'192.168.1.1' }, ...prev]);
+                                      triggerToast((u.status==='active'?'Disabled':'Enabled') + ' account for ' + u.name, u.status==='active'?'warning':'success');
+                                    }}>{u.status==='active'?'Disable':'Enable'}</button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: ORG HIERARCHY */}
+              {iamTab === 'org' && (
+                <div>
+                  <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px' }}>Organization Hierarchy</h3>
+                  <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {[
+                      { level: 0, icon: '🏛', label: 'CyShop Group Ltd.', meta: iamUsers.length + ' total users', color: '#ff6d00' },
+                      { level: 1, icon: '🌍', label: 'Middle East Region', meta: '12 users · KSA, JO, UAE', color: '#7c3aed' },
+                      { level: 2, icon: '📍', label: 'KSA Area', meta: 'Riyadh Hub, Jeddah', color: '#0ea5e9' },
+                      { level: 3, icon: '🏪', label: 'Riyadh Hub Branch', meta: '4 users · Active', color: '#10b981' },
+                      { level: 4, icon: '🏭', label: 'Riyadh Main Warehouse', meta: 'Rami Al-Dmour (WH Mgr)', color: '#ec4899' },
+                      { level: 4, icon: '🛒', label: 'POS / Sales Team', meta: 'Tarek Mansour (Sr. Cashier)', color: '#0ea5e9' },
+                      { level: 2, icon: '📍', label: 'Jordan Area (North)', meta: 'Amman Main, Zarqa', color: '#0ea5e9' },
+                      { level: 3, icon: '🏪', label: 'Amman Main Branch', meta: '6 users · Active', color: '#10b981' },
+                      { level: 4, icon: '🏭', label: 'Amman Hub Warehouse', meta: 'Unassigned', color: '#ec4899' },
+                      { level: 4, icon: '🍽', label: 'Kitchen Department', meta: 'Hassan Barakat (Chef)', color: '#f59e0b' },
+                      { level: 4, icon: '🛒', label: 'POS / Sales Team', meta: 'Nour Yassin, Sara Al-Zoubi', color: '#0ea5e9' },
+                      { level: 1, icon: '🌍', label: 'Europe Region', meta: '3 users · UK', color: '#7c3aed' },
+                      { level: 2, icon: '📍', label: 'London Area', meta: 'London Outlet', color: '#0ea5e9' },
+                      { level: 3, icon: '🏪', label: 'London Outlet Branch', meta: '2 users · Active', color: '#10b981' },
+                    ].map((n, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: (n.level * 24) + 'px' }}>
+                        <div style={{ width: n.level > 0 ? '16px' : '0', height: '1px', background: 'var(--border-color)', flexShrink: 0 }} />
+                        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: n.color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', flexShrink: 0 }}>{n.icon}</div>
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>{n.label}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{n.meta}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: ROLES */}
+              {iamTab === 'roles' && (
+                <div>
+                  <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                    {CATS.map(c => (
+                      <button key={c} onClick={()=>setIamRoleFilter(c)}
+                        style={{ padding: '5px 12px', fontSize: '11.5px', fontWeight: '600', border: '1px solid var(--border-color)', borderRadius: '20px', cursor: 'pointer',
+                          background: iamRoleFilter===c ? 'var(--primary-color)' : 'var(--bg-card)', color: iamRoleFilter===c ? '#fff' : 'var(--text-muted)' }}>{c}</button>
+                    ))}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px' }}>
+                    {filteredRoles.map(role => (
+                      <div key={role.id} className="card" style={{ borderLeft: '4px solid ' + role.color, padding: '14px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-primary)' }}>{role.name}</div>
+                            <div style={{ fontSize: '10.5px', color: role.color, fontWeight: '600', marginTop: '2px' }}>{role.category} &middot; Scope: {role.scope}</div>
+                          </div>
+                          <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '8px', background: role.color + '22', color: role.color, fontWeight: '700', flexShrink: 0 }}>
+                            {iamUsers.filter(u=>u.role===role.name).length} users
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '10.5px' }}>
+                          {Object.entries(role.perms).map(([mod, perms]) => perms.length > 0 && (
+                            <div key={mod} style={{ display: 'flex', gap: '4px', alignItems: 'flex-start' }}>
+                              <span style={{ fontWeight: '700', color: 'var(--text-primary)', minWidth: '72px', textTransform: 'capitalize', flexShrink: 0 }}>{mod}:</span>
+                              <span style={{ color: 'var(--text-muted)' }}>{perms.map(p => PERM_LABELS[mod]?.[p] || p).join(', ')}</span>
+                            </div>
+                          ))}
+                          {Object.values(role.perms).every(p=>p.length===0) && (
+                            <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>View-only / No module access</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: PERMISSIONS MATRIX */}
+              {iamTab === 'permissions' && (
+                <div>
+                  <div style={{ display: 'flex', gap: '4px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                    {Object.keys(PERM_LABELS).map(mod => (
+                      <button key={mod} onClick={()=>setIamPermModule(mod)}
+                        style={{ padding: '5px 16px', fontSize: '12px', fontWeight: '600', border: '1px solid var(--border-color)', borderRadius: '6px', cursor: 'pointer', textTransform: 'capitalize',
+                          background: iamPermModule===mod ? 'var(--primary-color)' : 'var(--bg-card)', color: iamPermModule===mod ? '#fff' : 'var(--text-muted)' }}>{mod.toUpperCase()}</button>
+                    ))}
+                  </div>
+                  <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+                      <thead>
+                        <tr style={{ background: 'var(--bg-card-hover)', borderBottom: '1px solid var(--border-color)' }}>
+                          <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: '700', color: 'var(--text-muted)', minWidth: '160px' }}>Role</th>
+                          {Object.entries(PERM_LABELS[iamPermModule]).map(([pkey, plabel]) => (
+                            <th key={pkey} style={{ padding: '10px 10px', textAlign: 'center', fontWeight: '700', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{plabel}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {IAM_ROLES.map((role, ri) => (
+                          <tr key={role.id} style={{ borderBottom: '1px solid var(--border-color)', background: ri%2===0?'transparent':'var(--bg-card-hover)' }}>
+                            <td style={{ padding: '8px 14px', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: role.color, marginRight: '7px' }} />
+                              {role.name}
+                            </td>
+                            {Object.keys(PERM_LABELS[iamPermModule]).map(pkey => {
+                              const has = role.perms[iamPermModule]?.includes(pkey);
+                              return (
+                                <td key={pkey} style={{ padding: '8px', textAlign: 'center' }}>
+                                  {has
+                                    ? <span style={{ color: '#10b981', fontSize: '16px' }}>&#10003;</span>
+                                    : <span style={{ color: 'var(--border-color)', fontSize: '14px' }}>&#10007;</span>}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: APPROVALS */}
+              {iamTab === 'approvals' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
+                    <span className="badge badge-warning">{iamApprovalQueue.filter(a=>a.status==='pending').length} Pending</span>
+                    <span className="badge badge-success">{iamApprovalQueue.filter(a=>a.status==='approved').length} Approved</span>
+                    <span className="badge badge-danger">{iamApprovalQueue.filter(a=>a.status==='rejected').length} Rejected</span>
+                  </div>
+                  {iamApprovalQueue.map(req => (
+                    <div key={req.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderLeft: '4px solid ' + (req.status==='pending'?'#f59e0b':req.status==='approved'?'#10b981':'#ef4444') }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)' }}>{req.id}</span>
+                          <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', fontWeight: '700',
+                            background: req.status==='pending'?'rgba(245,158,11,0.1)':req.status==='approved'?'rgba(16,185,129,0.1)':'rgba(239,68,68,0.1)',
+                            color: req.status==='pending'?'#f59e0b':req.status==='approved'?'#10b981':'#ef4444' }}>{req.status.toUpperCase()}</span>
+                        </div>
+                        <div style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: '600' }}>{req.type}{req.amount ? ' \u2014 ' + getCurrency() + ' ' + req.amount : ''}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>By: {req.requestedBy} &middot; Branch: {req.branch} &middot; {req.timestamp}</div>
+                      </div>
+                      {req.status === 'pending' && (
+                        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                          <button className="btn btn-success" style={{ padding: '5px 14px', fontSize: '11.5px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                            onClick={()=>{
+                              setIamApprovalQueue(prev=>prev.map(a=>a.id===req.id?{...a,status:'approved'}:a));
+                              setIamAuditLog(prev=>[{ ts: new Date().toLocaleString(), user: currentUser.name + ' (' + currentUser.role + ')', action: 'Approve: ' + req.type, module:'IAM', result:'Approved', ip:'192.168.1.1' }, ...prev]);
+                              triggerToast('Approved: ' + req.type + ' from ' + req.requestedBy, 'success');
+                            }}>Approve</button>
+                          <button className="btn btn-secondary" style={{ padding: '5px 14px', fontSize: '11.5px', color: '#ef4444' }}
+                            onClick={()=>{
+                              setIamApprovalQueue(prev=>prev.map(a=>a.id===req.id?{...a,status:'rejected'}:a));
+                              setIamAuditLog(prev=>[{ ts: new Date().toLocaleString(), user: currentUser.name + ' (' + currentUser.role + ')', action: 'Reject: ' + req.type, module:'IAM', result:'Rejected', ip:'192.168.1.1' }, ...prev]);
+                              triggerToast('Rejected: ' + req.type + ' from ' + req.requestedBy, 'warning');
+                            }}>Reject</button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* TAB: AUDIT LOG */}
+              {iamTab === 'audit' && (
+                <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                  <div style={{ padding: '12px 16px', background: 'var(--bg-card-hover)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>System Audit Trail ({iamAuditLog.length} events)</span>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <span className="badge badge-success">{iamAuditLog.filter(l=>l.result.includes('Allowed')||l.result.includes('Approved')).length} Allowed</span>
+                      <span className="badge badge-danger">{iamAuditLog.filter(l=>l.result.includes('Denied')||l.result.includes('Rejected')).length} Denied</span>
+                      <span className="badge badge-warning">{iamAuditLog.filter(l=>l.result.includes('Pending')).length} Pending</span>
+                    </div>
+                  </div>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11.5px' }}>
+                      <thead>
+                        <tr style={{ background: 'var(--bg-card-hover)', borderBottom: '1px solid var(--border-color)' }}>
+                          {['Timestamp','User','Action','Module','Result','IP'].map(h=>(
+                            <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '10px', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {iamAuditLog.map((log, idx) => (
+                          <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)', background: idx%2===0?'transparent':'var(--bg-card-hover)' }}>
+                            <td style={{ padding: '8px 12px', color: 'var(--text-muted)', fontFamily: 'monospace', whiteSpace: 'nowrap', fontSize: '10.5px' }}>{log.ts}</td>
+                            <td style={{ padding: '8px 12px', color: 'var(--text-primary)', fontWeight: '600', whiteSpace: 'nowrap' }}>{log.user}</td>
+                            <td style={{ padding: '8px 12px', color: 'var(--text-primary)' }}>{log.action}</td>
+                            <td style={{ padding: '8px 12px' }}>
+                              <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '8px', background: 'var(--bg-card-hover)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', fontWeight: '600' }}>{log.module}</span>
+                            </td>
+                            <td style={{ padding: '8px 12px', fontSize: '11.5px', fontWeight: '700',
+                              color: log.result.includes('Allowed')||log.result.includes('Approved') ? '#10b981' : log.result.includes('Denied')||log.result.includes('Rejected') ? '#ef4444' : '#f59e0b' }}>
+                              {log.result}
+                            </td>
+                            <td style={{ padding: '8px 12px', color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: '10.5px' }}>{log.ip}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: SECURITY */}
+              {iamTab === 'security' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div className="card">
+                    <h4 style={{ fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px' }}>Password Policy</h4>
+                    {[['Minimum Length','12 characters'],['Complexity','Upper + Lower + Number + Symbol'],['Expiry','90 days'],['History','Cannot reuse last 12 passwords'],['Lockout','5 failed attempts = 30 min lock']].map(([k,v])=>(
+                      <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-color)', fontSize: '12.5px' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>{k}</span><strong style={{ color: 'var(--text-primary)' }}>{v}</strong>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="card">
+                    <h4 style={{ fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px' }}>Access Restrictions (ABAC)</h4>
+                    {[['Branch Scoping','Cashier limited to assigned terminal'],['Area Scoping','Area Mgr sees assigned areas only'],['Warehouse Scoping','WH Mgr sees assigned warehouse'],['Time-Based Access','Configurable per role (optional)'],['Device Restrictions','Devices linked to branch registry'],['AI Query Gating','AI respects current user scope']].map(([k,v])=>(
+                      <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-color)', fontSize: '12.5px' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>{k}</span><strong style={{ color: '#10b981', fontSize: '11px' }}>Active</strong>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="card ai-glow-panel">
+                    <h4 style={{ fontWeight: '700', color: 'var(--ai-glow-color)', marginBottom: '8px' }}>CyAI Permission Gating</h4>
+                    <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '12px' }}>Test ABAC enforcement by switching persona above and asking CyAI a restricted query.</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ background: 'var(--bg-card)', padding: '10px', borderRadius: '8px', fontSize: '12px' }}>
+                        <div style={{ color: '#ef4444', fontWeight: '700', marginBottom: '4px' }}>Cashier asks: "Show me company profit"</div>
+                        <div style={{ color: 'var(--text-muted)' }}>Result: Access Denied — scope insufficient for financial reports.</div>
+                      </div>
+                      <div style={{ background: 'var(--bg-card)', padding: '10px', borderRadius: '8px', fontSize: '12px' }}>
+                        <div style={{ color: '#10b981', fontWeight: '700', marginBottom: '4px' }}>CFO asks: "Show me company profit"</div>
+                        <div style={{ color: 'var(--text-muted)' }}>Result: Allowed — full P&L report returned by AI.</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="card">
+                    <h4 style={{ fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px' }}>SSO &amp; MFA Status</h4>
+                    {[['Multi-Factor Auth (MFA)','Optional / Configurable per role'],['SSO Integration','Planned (SAML 2.0, OAuth2)'],['Active Sessions','3 sessions across 3 users'],['Session Timeout','30 min inactivity auto-logout'],['Audit Coverage','100% — all actions logged']].map(([k,v])=>(
+                      <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-color)', fontSize: '12.5px' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>{k}</span><strong style={{ color: 'var(--text-primary)', fontSize: '11px' }}>{v}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* USER MODAL */}
+              {iamUserModal && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+                  <div className="card" style={{ width: '520px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative', maxHeight: '80vh', overflow: 'auto' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h3 style={{ fontWeight: '800', color: 'var(--text-primary)', fontSize: '16px' }}>{iamSelectedUser ? 'Edit User' : 'Invite New User'}</h3>
+                      <button className="btn btn-ghost btn-icon" onClick={()=>setIamUserModal(false)} style={{ color: 'var(--text-muted)' }}><X size={16} /></button>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div className="form-group">
+                        <label className="form-label">Full Name *</label>
+                        <input className="input" defaultValue={iamSelectedUser?.name || ''} placeholder="e.g. Ahmad Al-Rashidi" style={{ color: 'var(--text-primary)' }} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Email *</label>
+                        <input className="input" type="email" defaultValue={iamSelectedUser?.email || ''} placeholder="user@company.com" style={{ color: 'var(--text-primary)' }} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Role *</label>
+                        <select className="select" defaultValue={iamSelectedUser?.role || 'Cashier'} style={{ color: 'var(--text-primary)' }}>
+                          {IAM_ROLES.map(r => <option key={r.id} value={r.name}>{r.name} ({r.category})</option>)}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Assigned Branch</label>
+                        <select className="select" defaultValue={iamSelectedUser?.branch || 'Amman Main'} style={{ color: 'var(--text-primary)' }}>
+                          <option value="*">Global (All Branches)</option>
+                          <option>Amman Main</option><option>Riyadh Hub</option>
+                          <option>Dubai Hub</option><option>London Outlet</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">MFA Required</label>
+                        <select className="select" defaultValue={iamSelectedUser?.mfaEnabled ? 'yes' : 'no'} style={{ color: 'var(--text-primary)' }}>
+                          <option value="no">Optional</option>
+                          <option value="yes">Required</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Account Status</label>
+                        <select className="select" defaultValue={iamSelectedUser?.status || 'active'} style={{ color: 'var(--text-primary)' }}>
+                          <option value="active">Active</option>
+                          <option value="disabled">Disabled</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="ai-glow-panel">
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                        An invite email will be sent. The user will set their password and optionally enable MFA on first login.
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                      <button className="btn btn-secondary" style={{ color: 'var(--text-primary)' }} onClick={()=>setIamUserModal(false)}>Cancel</button>
+                      <button className="btn btn-primary" onClick={()=>{
+                        setIamUserModal(false);
+                        setIamAuditLog(prev=>[{ ts: new Date().toLocaleString(), user: currentUser.name + ' (' + currentUser.role + ')', action: iamSelectedUser ? 'Edit User: ' + iamSelectedUser.name : 'Invite New User', module:'IAM', result:'Allowed', ip:'192.168.1.1' }, ...prev]);
+                        triggerToast(iamSelectedUser ? 'User updated successfully.' : 'Invite sent! Email delivered.', 'success');
+                      }}>{iamSelectedUser ? 'Save Changes' : 'Send Invite'}</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </main>
+          );
+        })()}
+
         {activeTab === 'setup' && (
           <main className="page-content" style={{ maxWidth: '860px', margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: '32px' }}>
@@ -6436,9 +7548,19 @@ function App() {
                         <input className="input" value={setupConfig.businessName} onChange={e => setSetupConfig(p => ({...p, businessName: e.target.value}))} placeholder="e.g. My Restaurant Ltd." style={{ color: 'var(--text-primary)' }} />
                       </div>
                       <div className="form-group">
-                        <label className="form-label">Business Type</label>
+                        <label className="form-label">Business Type (Template)</label>
                         <select className="select" value={setupConfig.businessType} onChange={e => setSetupConfig(p => ({...p, businessType: e.target.value}))} style={{ color: 'var(--text-primary)' }}>
-                          {['Restaurant', 'Fast Food', 'Retail Store', 'Cafe', 'Supermarket', 'Cloud Kitchen'].map(t => <option key={t} value={t.toLowerCase()}>{t}</option>)}
+                          {[
+                            ['restaurant', '🍽 F&B: Fine Dining Restaurant'],
+                            ['cafe', '☕ F&B: Coffee Shop & Cafe'],
+                            ['bakery', '🥐 F&B: Bakery & Sweet Shop'],
+                            ['supermarket', '🛒 Retail: Supermarket & Grocery'],
+                            ['fashion', '👗 Retail: Fashion & Apparel Boutique'],
+                            ['electronics', '📱 Retail: Electronics & Mobile Phone Store'],
+                            ['hardware', '🛠 Retail: Hardware & Auto Parts Store'],
+                            ['wholesale', '📦 B2B: Wholesale & Distributor'],
+                            ['manufacturing', '🏭 MFG: Food/Product Manufacturing + Retail']
+                          ].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                         </select>
                       </div>
                       <div className="form-group">
@@ -6562,6 +7684,7 @@ function App() {
                       setSetupComplete(true);
                       if (setupConfig.country) setCountry(setupConfig.country.substring(0, 2));
                       if (setupConfig.businessName) setStoreName(setupConfig.businessName);
+                      applyBusinessVertical(setupConfig.businessType);
                       triggerToast('Setup complete! System configured successfully!', 'success');
                       confetti({ particleCount: 200, spread: 120 });
                     }
@@ -6577,6 +7700,69 @@ function App() {
       <button className="ai-chat-trigger" onClick={() => setChatbotOpen(!chatbotOpen)} title="Chat with CYBERCOM AI">
         {chatbotOpen ? <X size={24} /> : <Bot size={24} />}
       </button>
+
+      {/* Simulated Thermal Receipt Printer Modal */}
+      {showPrinterModal && printingInvoice && (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div className="card" style={{ width: '420px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: '800', fontSize: '15px', color: 'var(--text-primary)' }}>🖨 ESC/POS Network Printer Dispatcher</span>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowPrinterModal(false)} style={{ color: 'var(--text-muted)' }}><X size={16} /></button>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Select Branch Hardware Printer</label>
+              <select className="select" style={{ color: 'var(--text-primary)' }} value={selectedPrinter} onChange={e => setSelectedPrinter(e.target.value)}>
+                <option value="Epson TM-T88VI">Epson TM-T88VI (Amman Cashier 1)</option>
+                <option value="Star Micronics TSP143">Star Micronics TSP143 (Riyadh Cashier 2)</option>
+                <option value="Bixolon SRP-350plus">Bixolon SRP-350plus (Kitchen Hot Line)</option>
+                <option value="Zebra ZD420">Zebra ZD420 (Label Barcode Printer)</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Receipt Layout Template</label>
+              <select className="select" style={{ color: 'var(--text-primary)' }} value={receiptTemplate} onChange={e => setReceiptTemplate(e.target.value)}>
+                <option value="standard">Standard Itemized VAT Receipt</option>
+                <option value="compact">Compact Condensed Layout</option>
+                <option value="kitchen">Kitchen KDS Prep Ticket (No pricing)</option>
+              </select>
+            </div>
+
+            <div style={{ background: '#fafafa', border: '1px solid #e4e4e7', padding: '16px', borderRadius: '8px', color: '#18181b', fontFamily: 'monospace', fontSize: '11px', maxHeight: '200px', overflowY: 'auto' }}>
+              <div style={{ textAlign: 'center', fontWeight: '800', marginBottom: '8px' }}>--- {storeName} ---</div>
+              <div style={{ textAlign: 'center', marginBottom: '8px' }}>{selectedPrinter} - Layout: {receiptTemplate.toUpperCase()}</div>
+              <div>Date: {new Date(printingInvoice.timestamp).toLocaleString()}</div>
+              <div>Invoice: {printingInvoice.id}</div>
+              <div style={{ borderTop: '1px dashed #000', margin: '4px 0' }}></div>
+              {printingInvoice.items.map((item, idx) => (
+                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>{item.product.name} x{item.quantity}</span>
+                  {receiptTemplate !== 'kitchen' && <span>{(item.quantity * item.price).toFixed(2)}</span>}
+                </div>
+              ))}
+              {receiptTemplate !== 'kitchen' && (
+                <>
+                  <div style={{ borderTop: '1px dashed #000', margin: '4px 0' }}></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>SUBTOTAL</span><span>{printingInvoice.subtotal.toFixed(2)}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>VAT</span><span>{printingInvoice.tax.toFixed(2)}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '800' }}><span>TOTAL</span><span>{printingInvoice.total.toFixed(2)} {getCurrency(printingInvoice.country)}</span></div>
+                </>
+              )}
+            </div>
+
+            <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => {
+              triggerToast(`Sending print job to ${selectedPrinter}...`, 'info');
+              setTimeout(() => {
+                triggerToast(`Print job successfully sent to ${selectedPrinter}!`, 'success');
+                setShowPrinterModal(false);
+              }, 1200);
+            }}>
+              Execute ESC/POS Print
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* AI Assistant Chatbot Dialog Window */}
       {chatbotOpen && (
@@ -6666,4 +7852,307 @@ function App() {
   );
 }
 
-export default App;
+  // ────────────── MULTI-DEVICE VIEWPORT RENDERERS ──────────────
+
+  function renderPOSScreen() {
+    return (
+      <div className="app-container dark" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-app)', padding: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+          <div>
+            <h1 style={{ fontSize: '20px', fontWeight: '900', color: 'var(--text-primary)', display: 'flex', gap: '8px', alignItems: 'center' }}>🖥 Cashier POS Terminal</h1>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Branch: {country === 'SA' ? 'Riyadh Hub' : 'Amman Center'} · Shift: #4812 (Active)</span>
+          </div>
+          <button className="btn btn-secondary" onClick={() => { setDeviceMode('manager'); window.location.hash = ''; }} style={{ color: 'var(--text-primary)' }}>← Close POS & Return to ERP</button>
+        </div>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px', flexGrow: 1 }}>
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto' }}>
+              {['All', 'Coffee', 'Mains', 'Desserts', 'Drinks'].map(cat => (
+                <button key={cat} className={`btn ${posCategory === cat ? 'btn-primary' : 'btn-secondary'}`} style={{ borderRadius: '20px', padding: '6px 16px', color: 'var(--text-primary)' }} onClick={() => setPosCategory(cat)}>{cat}</button>
+              ))}
+            </div>
+            <div className="product-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))' }}>
+              {filteredProducts.map(p => (
+                <div key={p.id} className="product-item" onClick={() => addToCart(p)}>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)' }}>{p.name}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--primary-color)', fontWeight: 'bold' }}>{p.price.toFixed(2)} {getCurrency()}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text-primary)' }}>Active Invoice Cart</h3>
+            <div style={{ flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {cart.map(item => (
+                <div key={item.product.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+                  <span>{item.product.name} x{item.quantity}</span>
+                  <strong>{(item.product.price * item.quantity).toFixed(2)}</strong>
+                </div>
+              ))}
+            </div>
+            <button className="btn btn-primary" style={{ width: '100%' }} onClick={handleCheckout}>Checkout POS Order</button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '6px' }}>
+              <button className="btn btn-secondary" style={{ fontSize: '10.5px', padding: '6px', color: 'var(--text-primary)' }} onClick={handleSimulateTalabatOrder}>Simulate Talabat</button>
+              <button className="btn btn-secondary" style={{ fontSize: '10.5px', padding: '6px', color: 'var(--text-primary)' }} onClick={handleSimulateCareemOrder}>Simulate Careem</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderKDSScreen() {
+    return (
+      <div className="app-container dark" style={{ minHeight: '100vh', padding: '24px', background: 'var(--bg-app)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px', marginBottom: '16px' }}>
+          <div>
+            <h1 style={{ fontSize: '20px', fontWeight: '900', color: 'var(--text-primary)' }}>🍳 Kitchen Display System (KDS)</h1>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Station: Hot Line & Beverage Bar</span>
+          </div>
+          <button className="btn btn-secondary" onClick={() => { setDeviceMode('manager'); window.location.hash = ''; }} style={{ color: 'var(--text-primary)' }}>← Close KDS & Return to ERP</button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+          {orders.map(order => (
+            <div key={order.id} className="card" style={{ borderColor: order.status === 'cooking' ? 'var(--primary-color)' : 'var(--border-color)', borderLeft: '4px solid var(--primary-color)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <strong style={{ color: 'var(--text-primary)' }}>{order.id}</strong>
+                <span className={`badge ${order.status === 'ready' ? 'badge-success' : 'badge-warning'}`}>{order.status}</span>
+              </div>
+              <div style={{ borderTop: '1px dashed var(--border-color)', padding: '8px 0', fontSize: '12px', color: 'var(--text-primary)' }}>
+                {order.items.map((i, idx) => <div key={idx}>{i.quantity}x {i.product.name}</div>)}
+              </div>
+              <button className="btn btn-primary" style={{ width: '100%', fontSize: '11.5px', padding: '6px' }} onClick={() => handleOrderKdsAction(order.id, order.status)}>
+                {order.status === 'pending' ? 'Start Cooking' : order.status === 'cooking' ? 'Mark Ready' : 'Serve / Deliver'}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function renderWaiterScreen() {
+    return (
+      <div className="app-container dark" style={{ minHeight: '100vh', padding: '24px', background: 'var(--bg-app)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px', marginBottom: '16px' }}>
+          <div>
+            <h1 style={{ fontSize: '20px', fontWeight: '900', color: 'var(--text-primary)' }}>📋 Garson Waiter Handheld</h1>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Staff: Waiter #108 (Amman Hall)</span>
+          </div>
+          <button className="btn btn-secondary" onClick={() => { setDeviceMode('manager'); window.location.hash = ''; }} style={{ color: 'var(--text-primary)' }}>← Close Waiter & Return to ERP</button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
+          <div className="card">
+            <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px' }}>Tables Map</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+              {['T1', 'T2', 'T3', 'T4', 'T5', 'T6'].map(t => (
+                <div key={t} className="card" style={{ textAlign: 'center', cursor: 'pointer', background: selectedTable === t ? 'var(--primary-glow)' : 'var(--bg-card)', borderColor: selectedTable === t ? 'var(--primary-color)' : 'var(--border-color)', padding: '16px 0' }} onClick={() => setSelectedTable(t)}>
+                  <span style={{ fontSize: '15px', fontWeight: '900', color: 'var(--text-primary)' }}>Table {t}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="card">
+            <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)' }}>New Order for Table {selectedTable}</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '10px', margin: '12px 0' }}>
+              {products.slice(9, 13).map(p => (
+                <button key={p.id} className="btn btn-secondary" style={{ fontSize: '11px', color: 'var(--text-primary)' }} onClick={() => {
+                  addToCart(p);
+                  triggerToast(`Added ${p.name} for Table ${selectedTable}`, 'success');
+                }}>{p.name}</button>
+              ))}
+            </div>
+            <button className="btn btn-primary" style={{ width: '100%', marginTop: '12px' }} onClick={() => {
+              handleCheckout();
+              triggerToast(`Table ${selectedTable} order dispatched to KDS!`, 'success');
+            }}>Dispatch Table Order</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderTableScreen() {
+    return (
+      <div className="app-container dark" style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0b0c10', padding: '16px' }}>
+        <div className="card" style={{ width: '380px', height: '700px', display: 'flex', flexDirection: 'column', border: '8px solid #1e2028', borderRadius: '32px', overflow: 'hidden', padding: 0 }}>
+          <div style={{ background: 'var(--brand-gradient)', padding: '16px', textAlign: 'center', color: '#white' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: '900', margin: 0 }}>📱 Table Ordering (Table T-3)</h2>
+            <span style={{ fontSize: '11px', opacity: 0.85 }}>Scan to Pay & Order Instantly</span>
+          </div>
+          <div style={{ flexGrow: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <h3 style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>Select Items</h3>
+            {products.slice(9, 13).map(p => (
+              <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-card-hover)', padding: '10px', borderRadius: '8px' }}>
+                <span style={{ fontSize: '12.5px', color: 'var(--text-primary)' }}>{p.name} ({p.price.toFixed(2)} {getCurrency()})</span>
+                <button className="btn btn-primary" style={{ padding: '3px 8px', fontSize: '11px' }} onClick={() => {
+                  addToCart(p);
+                  triggerToast(`Added ${p.name} to table cart`, 'success');
+                }}>+</button>
+              </div>
+            ))}
+          </div>
+          <div style={{ padding: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => {
+              handleCheckout();
+              triggerToast('Your QR Order has been sent to KDS! Table T-3 active.', 'success');
+            }}>Submit & Order</button>
+            <button className="btn btn-secondary" style={{ width: '100%', color: 'var(--text-primary)' }} onClick={() => { setDeviceMode('manager'); window.location.hash = ''; }}>Exit Demo</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderAttendanceScreen() {
+    return (
+      <div className="app-container dark" style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'var(--bg-app)' }}>
+        <div className="card" style={{ width: '320px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: '900', color: 'var(--text-primary)' }}>🕒 Employee Clock Kiosk</h2>
+          <div style={{ background: 'var(--bg-card-hover)', padding: '12px', borderRadius: '8px', fontSize: '20px', fontWeight: '800', fontFamily: 'monospace', letterSpacing: '8px', color: 'var(--text-primary)' }}>
+            {attendancePin || 'ENTER PIN'}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+              <button key={n} className="btn btn-secondary" style={{ fontSize: '16px', fontWeight: 'bold', height: '45px', color: 'var(--text-primary)' }} onClick={() => setAttendancePin(p => p + n)}>{n}</button>
+            ))}
+            <button className="btn btn-secondary" style={{ color: 'var(--danger-color)' }} onClick={() => setAttendancePin('')}>C</button>
+            <button className="btn btn-secondary" style={{ color: 'var(--text-primary)' }} onClick={() => setAttendancePin(p => p + '0')}>0</button>
+            <button className="btn btn-success" style={{ color: '#ffffff' }} onClick={() => {
+              if (!attendancePin) return;
+              triggerToast(`Employee PIN ${attendancePin} logged in successfully! Shift registered.`, 'success');
+              setAttendancePin('');
+              confetti({ particleCount: 40, spread: 30 });
+            }}>✓</button>
+          </div>
+          <button className="btn btn-ghost" onClick={() => { setDeviceMode('manager'); window.location.hash = ''; }} style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Exit Clock Mode</button>
+        </div>
+      </div>
+    );
+  }
+
+  function renderWarehouseScreen() {
+    return (
+      <div className="app-container dark" style={{ minHeight: '100vh', padding: '24px', background: 'var(--bg-app)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px', marginBottom: '16px' }}>
+          <div>
+            <h1 style={{ fontSize: '20px', fontWeight: '900', color: 'var(--text-primary)' }}>📦 Mobile Warehouse Scanner</h1>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Location: Riyadh Main Warehouse (Aisle 4B)</span>
+          </div>
+          <button className="btn btn-secondary" onClick={() => { setDeviceMode('manager'); window.location.hash = ''; }} style={{ color: 'var(--text-primary)' }}>← Close Warehouse & Return to ERP</button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)' }}>Scan Barcode / Receive PO</h3>
+            <input className="input" placeholder="Scan or enter barcode (e.g. 628100100234)" style={{ color: 'var(--text-primary)' }} value={scannedBarcode} onChange={e => setScannedBarcode(e.target.value)} />
+            <button className="btn btn-primary" onClick={() => {
+              if (!scannedBarcode) { triggerToast('Enter a barcode first', 'error'); return; }
+              const prod = products.find(p => p.barcode === scannedBarcode || p.id === scannedBarcode);
+              if (prod) {
+                setInventory(prev => prev.map(inv => inv.product.id === prod.id ? { ...inv, stock: inv.stock + 100 } : inv));
+                setWarehouseLogs(prev => [{ id: `REC-${Date.now().toString().slice(-3)}`, type: 'Receiving', item: prod.name, qty: 100, date: today }, ...prev]);
+                triggerToast(`Scanned: received +100 units of ${prod.name}!`, 'success');
+              } else {
+                triggerToast('Product not found in system catalog!', 'error');
+              }
+              setScannedBarcode('');
+            }}>Receive stock (+100)</button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+              <button className="btn btn-secondary" style={{ color: 'var(--danger-color)' }} onClick={() => {
+                setWarehouseLogs(prev => [{ id: `WST-${Date.now().toString().slice(-3)}`, type: 'Spoilage', item: 'Burger Bun (pack)', qty: 10, date: today }, ...prev]);
+                triggerToast('Logged 10x Burger Buns as Spoilage/Waste.', 'warning');
+              }}>Report Spoilage</button>
+              <button className="btn btn-secondary" style={{ color: 'var(--text-primary)' }} onClick={() => {
+                setWarehouseLogs(prev => [{ id: `TRF-${Date.now().toString().slice(-3)}`, type: 'Transfer', item: 'Arabica Coffee Beans (kg)', qty: 50, date: today }, ...prev]);
+                triggerToast('Dispatched 50kg Coffee Beans transfer to Amman.', 'info');
+              }}>Pallet Transfer</button>
+            </div>
+          </div>
+          <div className="card">
+            <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px' }}>Warehouse Device Logs</h3>
+            {warehouseLogs.map((log, idx) => (
+              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-color)', fontSize: '12px' }}>
+                <span style={{ color: 'var(--text-primary)' }}>{log.type}: {log.item}</span>
+                <strong style={{ color: 'var(--primary-color)' }}>{log.qty} units</strong>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderCustomerDisplayScreen() {
+    return (
+      <div className="app-container dark" style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0b0c10', padding: '24px' }}>
+        <div className="card" style={{ width: '600px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', padding: '32px' }}>
+          <div>
+            <h2 style={{ fontSize: '18px', fontWeight: '900', color: 'var(--text-primary)', marginBottom: '12px' }}>Shopping Cart</h2>
+            <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {cart.map(item => (
+                <div key={item.product.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--text-primary)' }}>
+                  <span>{item.product.name} x{item.quantity}</span>
+                  <strong>{(item.product.price * item.quantity).toFixed(2)} {getCurrency()}</strong>
+                </div>
+              ))}
+              {cart.length === 0 && <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Welcome! Items will show here once scanned.</div>}
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid var(--border-color)', paddingLeft: '24px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)' }}>Scan QR to Pay</h3>
+            <div style={{ background: 'white', padding: '12px', borderRadius: '8px' }}>
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=CyShopPay" alt="Pay QR" style={{ width: '130px', height: '130px' }} />
+            </div>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Scan with Apple Pay / STC Pay / CLIQ</span>
+            <button className="btn btn-secondary" onClick={() => { setDeviceMode('manager'); window.location.hash = ''; }} style={{ width: '100%', color: 'var(--text-primary)' }}>Exit Display</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderSelfOrderScreen() {
+    return (
+      <div className="app-container dark" style={{ minHeight: '100vh', padding: '24px', background: 'var(--bg-app)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px', marginBottom: '16px' }}>
+          <div>
+            <h1 style={{ fontSize: '20px', fontWeight: '900', color: 'var(--text-primary)' }}>🛎 Self-Ordering Kiosk</h1>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Select products, pay, and collect your order.</span>
+          </div>
+          <button className="btn btn-secondary" onClick={() => { setDeviceMode('manager'); window.location.hash = ''; }} style={{ color: 'var(--text-primary)' }}>← Exit Kiosk</button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '3fr 1.5fr', gap: '24px' }}>
+          <div className="product-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', maxHeight: '70vh' }}>
+            {products.slice(9, 15).map(p => (
+              <div key={p.id} className="card product-item" style={{ textAlign: 'center', cursor: 'pointer' }} onClick={() => {
+                addToCart(p);
+                triggerToast(`Added ${p.name} to Kiosk order`, 'success');
+              }}>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>{p.name}</span>
+                <span style={{ color: 'var(--primary-color)', fontSize: '12px', fontWeight: 'bold', marginTop: '6px' }}>{p.price.toFixed(2)} {getCurrency()}</span>
+              </div>
+            ))}
+          </div>
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)' }}>Your Order Cart</h3>
+            <div style={{ flexGrow: 1, overflowY: 'auto' }}>
+              {cart.map(item => (
+                <div key={item.product.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', color: 'var(--text-primary)', marginBottom: '8px' }}>
+                  <span>{item.product.name} x{item.quantity}</span>
+                  <strong>{(item.product.price * item.quantity).toFixed(2)}</strong>
+                </div>
+              ))}
+            </div>
+            <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => {
+              handleCheckout();
+              triggerToast('Self-order paid! Please collect receipt and queue number #12.', 'success');
+              confetti({ particleCount: 100, spread: 80 });
+            }}>Tap to Pay & Checkout</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  export default App;

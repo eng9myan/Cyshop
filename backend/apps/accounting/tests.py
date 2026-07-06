@@ -77,10 +77,10 @@ class AccountTests(TestCase):
         )
         res = client.get('/api/v1/accounting/accounts/')
         self.assertEqual(res.status_code, 200)
-        codes = [a['code'] for a in res.json()['results'] if 'results' in res.json() else res.json()]
-        # All returned accounts must belong to TENANT_ID
         data = res.json()
         result_list = data.get('results', data) if isinstance(data, dict) else data
+        codes = [a['code'] for a in result_list]
+        # All returned accounts must belong to TENANT_ID
         for a in result_list:
             self.assertEqual(a['tenant_id'], TENANT_ID)
 
