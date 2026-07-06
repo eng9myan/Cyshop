@@ -25,35 +25,40 @@ function LoginForm() {
     }
   }, []);
 
-  const fillAndSubmitDemo = () => {
-    setSubdomain(DEMO.subdomain);
-    setUsername(DEMO.username);
-    setPassword(DEMO.password);
+  const fillAndSubmitDemo = async () => {
     setError("");
-    activateDemoSession();
-  };
-
-  const activateDemoSession = () => {
-    localStorage.setItem("access_token", "cyshop-demo-token");
-    localStorage.setItem("refresh_token", "cyshop-demo-refresh");
-    localStorage.setItem("tenant_id", "00000000-0000-0000-0000-000000000001");
-    localStorage.setItem("tenant_name", "CyShop Demo");
-    localStorage.setItem("username", "demo");
-    localStorage.setItem("email", "demo@cy-com.com");
-    localStorage.setItem("scopes", JSON.stringify(["pos", "inventory", "crm", "catalog", "orders", "analytics"]));
-    router.push("/app");
+    setLoading(true);
+    try {
+      const base = process.env.NEXT_PUBLIC_API_URL || "";
+      const res = await fetch(`${base}/api/v1/identity/login/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Tenant-Subdomain": DEMO.subdomain },
+        body: JSON.stringify({ username: DEMO.username, password: DEMO.password }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.non_field_errors?.[0] || err.detail || "Invalid credentials");
+      }
+      const data = await res.json();
+      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("refresh_token", data.refresh_token);
+      localStorage.setItem("tenant_id", data.tenant_id);
+      localStorage.setItem("tenant_name", data.tenant_name);
+      localStorage.setItem("username", data.username);
+      localStorage.setItem("email", data.email);
+      localStorage.setItem("scopes", JSON.stringify(data.scopes || []));
+      router.push("/app");
+    } catch (err) {
+      setError(err.message || "Demo login failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-
-    // Demo bypass — works without backend
-    if (subdomain === DEMO.subdomain && username === DEMO.username && password === DEMO.password) {
-      activateDemoSession();
-      return;
-    }
 
     try {
       const base = process.env.NEXT_PUBLIC_API_URL || "";
@@ -84,6 +89,7 @@ function LoginForm() {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-dvh grid lg:grid-cols-2 bg-[var(--color-bg)] text-[var(--color-ink)]">
@@ -203,6 +209,7 @@ function LoginForm() {
 
             <button
               type="submit"
+              id="login-submit-btn"
               disabled={loading}
               className="cy-btn cy-btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed"
             >

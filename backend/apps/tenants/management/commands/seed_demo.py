@@ -59,14 +59,21 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(f"  Tenant seeding skipped: {exc}"))
 
     def _seed_admin(self):
+        try:
+            from apps.tenants.models import Tenant  # noqa: PLC0415
+            tenant = Tenant.objects.get(subdomain=DEMO_TENANT["subdomain"])
+        except Exception:  # noqa: BLE001
+            tenant = None
+
         user, created = User.objects.get_or_create(
             username=DEMO_ADMIN["username"],
             defaults={
                 "email": DEMO_ADMIN["email"],
                 "first_name": DEMO_ADMIN["first_name"],
                 "last_name": DEMO_ADMIN["last_name"],
-                "is_staff": False,
+                "is_staff": True,
                 "is_superuser": False,
+                "tenant_id": tenant.id if tenant else None,
             },
         )
         if created:
@@ -74,4 +81,10 @@ class Command(BaseCommand):
             user.save()
             self.stdout.write(f"  Created admin: {user.username}")
         else:
-            self.stdout.write(f"  Admin already exists: {user.username}")
+            # Always ensure tenant link is up to date
+            if tenant and str(user.tenant_id) != str(tenant.id):
+                user.tenant_id = tenant.id
+                user.save()
+                self.stdout.write(f"  Updated admin tenant link: {user.username} -> {tenant.subdomain}")
+            else:
+                self.stdout.write(f"  Admin already exists: {user.username}")
