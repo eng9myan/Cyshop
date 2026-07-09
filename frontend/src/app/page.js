@@ -60,6 +60,7 @@ export default function Landing() {
             <Link href="/industries" className="hover:text-[var(--color-ink)] transition">Industries</Link>
           </nav>
           <div className="flex items-center gap-2">
+            <Link href="/login?demo=1" className="cy-btn cy-btn-ghost hidden sm:inline-flex text-[var(--color-brand-blue)] border-[rgba(89,195,225,0.3)] hover:bg-[rgba(89,195,225,0.06)]">Live Demo</Link>
             <Link href="/login" className="cy-btn cy-btn-ghost hidden sm:inline-flex">Sign in</Link>
             <Link href="/wizard" className="cy-btn cy-btn-primary">Start free <ArrowRight className="w-4 h-4" /></Link>
           </div>
@@ -80,7 +81,10 @@ export default function Landing() {
               with an AI copilot that drafts quotes, forecasts demand, and flags churn before it happens.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link href="/wizard" className="cy-btn cy-btn-primary">Request Demo <ArrowRight className="w-4 h-4" /></Link>
+              <Link href="/login?demo=1" className="cy-btn cy-btn-primary bg-gradient-to-br from-[#59C3E1] to-[#0E7C9B] border-none shadow-[0_8px_20px_-8px_rgba(89,195,225,0.55)] hover:shadow-[0_12px_28px_-8px_rgba(89,195,225,0.7)] text-white">
+                Launch Live Demo <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link href="/wizard" className="cy-btn cy-btn-ghost">Start free trial</Link>
               <button className="cy-btn cy-btn-ghost"><Play className="w-4 h-4" /> Watch 2-min demo</button>
               <span className="inline-flex items-center gap-2 text-sm text-[var(--color-ink-muted)] ml-1">
                 <span className="cy-blink" /> Live multi-tenant sandbox
@@ -268,7 +272,10 @@ export default function Landing() {
                 14-day free trial. No credit card. Real AI on real data — your data, isolated, encrypted.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-3">
-                <Link href="/wizard" className="cy-btn cy-btn-primary">Request Demo <ArrowRight className="w-4 h-4" /></Link>
+                <Link href="/login?demo=1" className="cy-btn cy-btn-primary bg-gradient-to-br from-[#59C3E1] to-[#0E7C9B] border-none shadow-[0_8px_20px_-8px_rgba(89,195,225,0.55)] hover:shadow-[0_12px_28px_-8px_rgba(89,195,225,0.7)] text-white">
+                  Launch Live Demo <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link href="/wizard" className="cy-btn cy-btn-ghost">Start Free Trial</Link>
                 <Link href="/contact" className="cy-btn cy-btn-ghost">Talk to sales</Link>
               </div>
             </div>

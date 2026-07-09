@@ -92,6 +92,9 @@ document.addEventListener('DOMContentLoaded', () => {
     'nav-contact':  { en: 'Contact', ar: 'تواصل معنا' },
     'btn-trial':    { en: 'Start Free 14-Day Trial', ar: 'ابدأ تجربة مجانية ١٤ يوم' },
     'btn-demo':     { en: 'Book a Live Demo', ar: 'احجز عرضاً مباشراً' },
+    'btn-nav-demo': { en: 'Live Demo', ar: 'عرض مباشر' },
+    'btn-hero-demo': { en: '⚡ Launch Live Demo', ar: '⚡ تشغيل العرض المباشر' },
+    'btn-mobile-demo': { en: 'Launch Live Demo →', ar: 'تشغيل العرض المباشر ←' },
   };
   langBtn?.addEventListener('click', () => {
     isAr = !isAr;
