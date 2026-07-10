@@ -1214,6 +1214,34 @@ function App() {
     }
   };
 
+  // Sync language direction
+  useEffect(() => {
+    document.body.dir = language === 'ar' ? 'rtl' : 'ltr';
+    if (language === 'ar') {
+      document.body.classList.add('rtl');
+    } else {
+      document.body.classList.remove('rtl');
+    }
+  }, [language]);
+
+  // Sync Device Mode via Hash Routing
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '').toLowerCase();
+      if (['pos', 'kds', 'waiter', 'table', 'attendance', 'warehouse', 'customer-display', 'self-order', 'manager'].includes(hash)) {
+        setDeviceMode(hash);
+      } else {
+        setDeviceMode('manager');
+      }
+    };
+    
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange(); // Init
+    
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+
   // Scroll AI messages to bottom
   useEffect(() => {
     if (chatBottomRef.current) {
@@ -2219,6 +2247,16 @@ function App() {
   if (deviceMode === 'customer-display') return renderCustomerDisplayScreen();
   if (deviceMode === 'self-order') return renderSelfOrderScreen();
 
+  // Fullscreen Device Modes Rendering Switch
+  if (deviceMode === 'pos') return renderPOSScreen();
+  if (deviceMode === 'kds') return renderKDSScreen();
+  if (deviceMode === 'waiter') return renderWaiterScreen();
+  if (deviceMode === 'table') return renderTableScreen();
+  if (deviceMode === 'attendance') return renderAttendanceScreen();
+  if (deviceMode === 'warehouse') return renderWarehouseScreen();
+  if (deviceMode === 'customer-display') return renderCustomerDisplayScreen();
+  if (deviceMode === 'self-order') return renderSelfOrderScreen();
+
   return (
     <div className="app-container">
       {/* Toast Overlay Alerts */}
@@ -2425,7 +2463,7 @@ function App() {
           >
             <ShieldCheck size={18} />
             {!sidebarCollapsed && (
-              <span style={{ color: activeTab === 'setup' ? 'var(--primary-color)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>{!sidebarCollapsed && getMenuLabel('setup')}
+              <span style={{ color: activeTab === 'setup' ? 'var(--primary-color)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>{!sidebarCollapsed && getMenuLabel('setup')}{!sidebarCollapsed && getMenuLabel('setup')}
                 Setup Wizard
                 <span className="badge badge-warning" style={{ fontSize: '9px', padding: '1px 4px' }}>NEW</span>
               </span>
@@ -2527,6 +2565,30 @@ function App() {
                 <option value="self-order">🛎 Self Kiosk</option>
               </select>
             </div>
+            {/* Device Mode Switcher */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)' }}>Device Mode:</span>
+              <select
+                className="select"
+                style={{ width: '150px', height: '32px', fontSize: '12px', padding: '0 8px', color: 'var(--text-primary)', border: '1px solid var(--primary-border)', borderRadius: '6px' }}
+                value={deviceMode}
+                onChange={(e) => {
+                  setDeviceMode(e.target.value);
+                  window.location.hash = e.target.value === 'manager' ? '' : `#${e.target.value}`;
+                  triggerToast(`Switched to ${e.target.value.toUpperCase()} view`, 'info');
+                }}
+              >
+                <option value="manager">📊 ERP Manager</option>
+                <option value="pos">🖥 POS Cashier</option>
+                <option value="kds">🍳 KDS Kitchen</option>
+                <option value="waiter">📋 Waiter App</option>
+                <option value="table">📱 Table QR Order</option>
+                <option value="attendance">🕒 Clock Terminal</option>
+                <option value="warehouse">📦 Warehouse Scanner</option>
+                <option value="customer-display">📺 Cust Display</option>
+                <option value="self-order">🛎 Self Kiosk</option>
+              </select>
+            </div>
             {/* Talabat Connection Status Indicator */}
             <div
               className="badge"
@@ -2546,6 +2608,19 @@ function App() {
               <Bike size={13} />
               <span>Talabat: {talabatConnected ? 'Online' : 'Offline'}</span>
             </div>
+
+            {/* Language Switcher */}
+            <button
+              className="btn btn-secondary"
+              style={{ padding: '6px 12px', fontSize: '12.5px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-primary)' }}
+              onClick={() => {
+                const nextLang = language === 'en' ? 'ar' : 'en';
+                setLanguage(nextLang);
+                triggerToast(nextLang === 'ar' ? 'تم تحويل النظام إلى اللغة العربية' : 'System toggled to English', 'info');
+              }}
+            >
+              🌐 {language === 'en' ? 'العربية' : 'English'}
+            </button>
 
             {/* Language Switcher */}
             <button
@@ -3631,6 +3706,39 @@ function App() {
         {/* Analytics Tab */}
         {activeTab === 'analytics' && (
           <main className="page-content">
+            {/* CEO Global Consolidated Performance Overview */}
+            <div className="card" style={{ marginBottom: '24px', borderLeft: '4px solid var(--ai-glow-color)' }}>
+              <h3 style={{ fontWeight: '800', color: 'var(--text-primary)', marginBottom: '4px' }}>🌍 Global Consolidated Performance (Corporate Base: USD)</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>Comparison of branch performance and e-invoice counts across all jurisdictions.</p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+                {[
+                  { branch: 'Riyadh Branch (🇸🇦 KSA)', sales: 14280.00, count: 245, vat: '15%', progress: '75%' },
+                  { branch: 'Amman Branch (🇯🇴 Jordan)', sales: 8450.00, count: 188, vat: '16%', progress: '52%' },
+                  { branch: 'Dubai Branch (🇦🇪 UAE)', sales: 18600.00, count: 310, vat: '5%', progress: '92%' },
+                  { branch: 'London Branch (🇬🇧 UK)', sales: 22400.00, count: 388, vat: '20%', progress: '98%' }
+                ].map((b, idx) => (
+                  <div key={idx} style={{ background: 'var(--bg-card-hover)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                    <div style={{ fontWeight: '700', fontSize: '13.5px', color: 'var(--text-primary)', marginBottom: '8px' }}>{b.branch}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Revenue (USD)</span>
+                      <strong style={{ color: 'var(--success-color)' }}>${b.sales.toLocaleString()}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Sales Count</span>
+                      <strong style={{ color: 'var(--text-primary)' }}>{b.count} invoices</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '10px' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Tax Rate</span>
+                      <strong style={{ color: 'var(--warning-color)' }}>{b.vat} VAT</strong>
+                    </div>
+                    <div className="sparkline-track" style={{ height: '4px' }}>
+                      <div className="sparkline-fill" style={{ width: b.progress, backgroundColor: 'var(--primary-color)' }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
             {/* CEO Global Consolidated Performance Overview */}
             <div className="card" style={{ marginBottom: '24px', borderLeft: '4px solid var(--ai-glow-color)' }}>
               <h3 style={{ fontWeight: '800', color: 'var(--text-primary)', marginBottom: '4px' }}>🌍 Global Consolidated Performance (Corporate Base: USD)</h3>
@@ -5686,6 +5794,13 @@ function App() {
                         ['Social Security Code', ''],
                         ['KSA GOSI Config', 'Employer: 12.0% | Employee: 9.75% (21.75% Total)'],
                         ['Jordan SSC Config', 'Employer: 14.25% | Employee: 7.5% (21.75% Total)'],
+                        ['GCC Document Expiry', ''],
+                        ['Iqama / Work Permit', 'Valid (Expires 2027-02-15) 🟢'],
+                        ['Passport Expiry', 'Valid (Expires 2029-08-11) 🟢'],
+                        ['Labor Card Status', 'Valid (Expires 2026-12-10) 🟢'],
+                        ['Social Security Code', ''],
+                        ['KSA GOSI Config', 'Employer: 12.0% | Employee: 9.75% (21.75% Total)'],
+                        ['Jordan SSC Config', 'Employer: 14.25% | Employee: 7.5% (21.75% Total)'],
                         ['Health Premium', `${(selectedEmployee.healthPremium || 0).toLocaleString()} ${getCurrency()} (Employer: ${selectedEmployee.employerHealthShare || 0}%)`],
                         ['Total CTC', selectedEmployee.contractType === 'Hourly' ? 'Hourly (based on work logs)' : `${Math.round((selectedEmployee.baseSalary + selectedEmployee.allowances) * 1.1425 + (selectedEmployee.healthPremium * selectedEmployee.employerHealthShare / 100)).toLocaleString()} ${getCurrency()}/mo`],
                         ['Leave Balance', `${selectedEmployee.leaveBalance} days`]
@@ -6627,6 +6742,50 @@ function App() {
                     </div>
                   </div>
 
+                  {/* Multi-Currency consolidation panel */}
+                  <div className="card" style={{ marginBottom: '24px' }}>
+                    <h3 style={{ fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px' }}>💱 Global Multi-Currency FX Ledger Consolidation</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '16px', alignItems: 'center' }}>
+                      <div>
+                        <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+                          Select a base currency to translate and consolidate all global financial ledgers. Current branches operate in 🇸🇦 SAR, 🇯🇴 JOD, 🇦🇪 AED, and 🇬🇧 GBP.
+                        </p>
+                      </div>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontSize: '11px' }}>Consolidation Base Currency</label>
+                        <select className="select" style={{ color: 'var(--text-primary)' }} value={reportingCurrency} onChange={e => {
+                          setReportingCurrency(e.target.value);
+                          triggerToast(`Consolidation reporting currency set to ${e.target.value}`, 'info');
+                        }}>
+                          <option value="USD">USD ($) - Corporate Base</option>
+                          <option value="SAR">SAR (🇸🇦) - Saudi Branch</option>
+                          <option value="JOD">JOD (🇯🇴) - Jordan Branch</option>
+                          <option value="AED">AED (🇦🇪) - UAE Branch</option>
+                          <option value="GBP">GBP (🇬🇧) - UK Branch</option>
+                        </select>
+                      </div>
+                      <button className="btn btn-ai" style={{ height: '42px' }} onClick={() => {
+                        triggerToast(`Loading ledger sheets for Riyadh, Amman, Dubai, and London...`, 'info');
+                        setTimeout(() => {
+                          triggerToast(`Successfully translated all FX ledgers into consolidated ${reportingCurrency} statement!`, 'success');
+                          confetti({ particleCount: 100, spread: 80 });
+                        }, 1200);
+                      }}>
+                        Run FX Consolidation
+                      </button>
+                    </div>
+                    <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '16px', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', letterSpacing: '0.05em' }}>LIVE FX RATES (Corporate Standard Base USD):</span>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', textAlign: 'center', fontSize: '11.5px' }}>
+                        <div style={{ background: 'var(--bg-card-hover)', padding: '6px', borderRadius: '6px', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>1 USD = 1.00 USD</div>
+                        <div style={{ background: 'var(--bg-card-hover)', padding: '6px', borderRadius: '6px', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>1 JOD = 1.41 USD</div>
+                        <div style={{ background: 'var(--bg-card-hover)', padding: '6px', borderRadius: '6px', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>1 SAR = 0.27 USD</div>
+                        <div style={{ background: 'var(--bg-card-hover)', padding: '6px', borderRadius: '6px', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>1 AED = 0.27 USD</div>
+                        <div style={{ background: 'var(--bg-card-hover)', padding: '6px', borderRadius: '6px', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>1 GBP = 1.28 USD</div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* VAT Summary and Actions */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                     <div className="card">
@@ -6884,6 +7043,106 @@ function App() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {supplyTab === 'transfers' && (
+              <div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
+                  {/* Left Form: Initiate Transfer */}
+                  <div className="card">
+                    <h3 style={{ fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px' }}>🚚 Dispatch Inter-Branch Stock</h3>
+                    <div className="form-group">
+                      <label className="form-label">From Warehouse (Source Branch)</label>
+                      <select className="select" style={{ color: 'var(--text-primary)' }} value={newTransferFrom} onChange={e => setNewTransferFrom(e.target.value)}>
+                        <option value="Riyadh Main">Riyadh Main Warehouse (🇸🇦)</option>
+                        <option value="Amman Hub">Amman Hub Warehouse (🇯🇴)</option>
+                        <option value="Dubai Freezone">Dubai Freezone Warehouse (🇦🇪)</option>
+                        <option value="London Center">London Center Warehouse (🇬🇧)</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">To Warehouse (Destination Branch)</label>
+                      <select className="select" style={{ color: 'var(--text-primary)' }} value={newTransferTo} onChange={e => setNewTransferTo(e.target.value)}>
+                        <option value="Amman Hub">Amman Hub Warehouse (🇯🇴)</option>
+                        <option value="Riyadh Main">Riyadh Main Warehouse (🇸🇦)</option>
+                        <option value="Dubai Freezone">Dubai Freezone Warehouse (🇦🇪)</option>
+                        <option value="London Center">London Center Warehouse (🇬🇧)</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Select Raw Material / Product</label>
+                      <select className="select" style={{ color: 'var(--text-primary)' }} value={newTransferProd} onChange={e => setNewTransferProd(e.target.value)}>
+                        {products.filter(p => p.category === 'Raw Materials').map(p => (
+                          <option key={p.id} value={p.name}>{p.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Quantity to Transfer</label>
+                      <input className="input" type="number" style={{ color: 'var(--text-primary)' }} value={newTransferQty} onChange={e => setNewTransferQty(e.target.value)} placeholder="e.g. 50" />
+                    </div>
+                    <button className="btn btn-primary" style={{ width: '100%', marginTop: '12px' }} onClick={() => {
+                      if (!newTransferQty || parseFloat(newTransferQty) <= 0) { triggerToast('Please enter a valid quantity', 'error'); return; }
+                      if (newTransferFrom === newTransferTo) { triggerToast('Source and destination warehouses must be different', 'error'); return; }
+                      const newT = {
+                        id: `TRF-${String(interBranchTransfers.length + 1).padStart(3, '0')}`,
+                        from: newTransferFrom,
+                        to: newTransferTo,
+                        product: newTransferProd,
+                        qty: parseFloat(newTransferQty),
+                        status: 'In Transit',
+                        date: today
+                      };
+                      setInterBranchTransfers(prev => [newT, ...prev]);
+                      setNewTransferQty('');
+                      triggerToast(`Inter-branch stock transfer ${newT.id} successfully dispatched! Customs papers generated.`, 'success');
+                      confetti({ particleCount: 50, spread: 40 });
+                    }}>
+                      Dispatch Inventory Shipment
+                    </button>
+                  </div>
+
+                  {/* Right Table: Transfer Logs */}
+                  <div className="card">
+                    <h3 style={{ fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px' }}>📋 Inter-Branch Transit Logs</h3>
+                    <div className="table-container" style={{ border: 'none', margin: 0 }}>
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Transfer ID</th><th>Date</th><th>Item</th><th>Qty</th><th>Route</th><th>Status</th><th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {interBranchTransfers.map(t => (
+                            <tr key={t.id}>
+                              <td style={{ fontWeight: '700', color: 'var(--primary-color)' }}>{t.id}</td>
+                              <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t.date}</td>
+                              <td style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{t.product}</td>
+                              <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>{t.qty}</td>
+                              <td style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.from} → {t.to}</td>
+                              <td>
+                                <span className={`badge ${t.status === 'Completed' ? 'badge-success' : 'badge-warning'}`}>
+                                  {t.status}
+                                </span>
+                              </td>
+                              <td>
+                                {t.status === 'In Transit' ? (
+                                  <button className="btn btn-success" style={{ fontSize: '11px', padding: '3px 8px' }} onClick={() => {
+                                    setInterBranchTransfers(prev => prev.map(p => p.id === t.id ? { ...p, status: 'Completed' } : p));
+                                    triggerToast(`Shipment ${t.id} customs cleared and received at ${t.to}!`, 'success');
+                                  }}>Receive</button>
+                                ) : (
+                                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>No Action</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -7764,6 +8023,69 @@ function App() {
         </div>
       )}
 
+      {/* Simulated Thermal Receipt Printer Modal */}
+      {showPrinterModal && printingInvoice && (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div className="card" style={{ width: '420px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: '800', fontSize: '15px', color: 'var(--text-primary)' }}>🖨 ESC/POS Network Printer Dispatcher</span>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowPrinterModal(false)} style={{ color: 'var(--text-muted)' }}><X size={16} /></button>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Select Branch Hardware Printer</label>
+              <select className="select" style={{ color: 'var(--text-primary)' }} value={selectedPrinter} onChange={e => setSelectedPrinter(e.target.value)}>
+                <option value="Epson TM-T88VI">Epson TM-T88VI (Amman Cashier 1)</option>
+                <option value="Star Micronics TSP143">Star Micronics TSP143 (Riyadh Cashier 2)</option>
+                <option value="Bixolon SRP-350plus">Bixolon SRP-350plus (Kitchen Hot Line)</option>
+                <option value="Zebra ZD420">Zebra ZD420 (Label Barcode Printer)</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Receipt Layout Template</label>
+              <select className="select" style={{ color: 'var(--text-primary)' }} value={receiptTemplate} onChange={e => setReceiptTemplate(e.target.value)}>
+                <option value="standard">Standard Itemized VAT Receipt</option>
+                <option value="compact">Compact Condensed Layout</option>
+                <option value="kitchen">Kitchen KDS Prep Ticket (No pricing)</option>
+              </select>
+            </div>
+
+            <div style={{ background: '#fafafa', border: '1px solid #e4e4e7', padding: '16px', borderRadius: '8px', color: '#18181b', fontFamily: 'monospace', fontSize: '11px', maxHeight: '200px', overflowY: 'auto' }}>
+              <div style={{ textAlign: 'center', fontWeight: '800', marginBottom: '8px' }}>--- {storeName} ---</div>
+              <div style={{ textAlign: 'center', marginBottom: '8px' }}>{selectedPrinter} - Layout: {receiptTemplate.toUpperCase()}</div>
+              <div>Date: {new Date(printingInvoice.timestamp).toLocaleString()}</div>
+              <div>Invoice: {printingInvoice.id}</div>
+              <div style={{ borderTop: '1px dashed #000', margin: '4px 0' }}></div>
+              {printingInvoice.items.map((item, idx) => (
+                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>{item.product.name} x{item.quantity}</span>
+                  {receiptTemplate !== 'kitchen' && <span>{(item.quantity * item.price).toFixed(2)}</span>}
+                </div>
+              ))}
+              {receiptTemplate !== 'kitchen' && (
+                <>
+                  <div style={{ borderTop: '1px dashed #000', margin: '4px 0' }}></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>SUBTOTAL</span><span>{printingInvoice.subtotal.toFixed(2)}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>VAT</span><span>{printingInvoice.tax.toFixed(2)}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '800' }}><span>TOTAL</span><span>{printingInvoice.total.toFixed(2)} {getCurrency(printingInvoice.country)}</span></div>
+                </>
+              )}
+            </div>
+
+            <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => {
+              triggerToast(`Sending print job to ${selectedPrinter}...`, 'info');
+              setTimeout(() => {
+                triggerToast(`Print job successfully sent to ${selectedPrinter}!`, 'success');
+                setShowPrinterModal(false);
+              }, 1200);
+            }}>
+              Execute ESC/POS Print
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* AI Assistant Chatbot Dialog Window */}
       {chatbotOpen && (
         <div className="ai-chat-window">
@@ -8155,4 +8477,5 @@ function App() {
     );
   }
 
-  export default App;
+export default App;
+
