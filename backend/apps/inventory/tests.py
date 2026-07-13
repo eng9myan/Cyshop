@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from apps.tenants.models import Company, Branch, Tenant
 from apps.catalog.models import Product, ProductUnit
-from .models import Warehouse, StockLocation, StockLevel, StockMovement
+from .models import Warehouse, StockLocation, StockLevel, StockMovement, StockTransfer
 
 User = get_user_model()
 TENANT_ID = '018f1a2b-3c4d-7e5f-8a9b-0c1d2e3f4a5c'
@@ -145,3 +145,92 @@ class StockMovementTests(TestCase):
         self.assertEqual(res.status_code, 200)
         totals = {item['product__name']: item['total_qty'] for item in res.json()}
         self.assertIn('Test Coffee', totals)
+
+
+class StockTransferTests(TestCase):
+
+    def setUp(self):
+        self.company, self.branch_a, self.warehouse_a, self.loc_a, _, self.product = _setup_base()
+        self.branch_b = Branch.objects.create(
+            name='Second Branch', company=self.company, tenant_id=TENANT_ID, address='Branch B'
+        )
+        self.warehouse_b = Warehouse.objects.create(
+            name='Second Warehouse', code='WH-B',
+            company=self.company, branch=self.branch_b, tenant_id=TENANT_ID,
+        )
+        self.loc_b = StockLocation.objects.create(
+            name='Receiving B', code='RCV-B',
+            warehouse=self.warehouse_b, location_type='RECEIVING', tenant_id=TENANT_ID,
+        )
+        StockMovement.objects.create(
+            product=self.product, to_location=self.loc_a,
+            quantity=Decimal('50'), movement_type='RECEIPT', tenant_id=TENANT_ID,
+        )
+
+    def test_dispatch_debits_source_only(self):
+        transfer = StockTransfer.objects.create(
+            company=self.company, from_branch=self.branch_a, to_branch=self.branch_b,
+            from_location=self.loc_a, to_location=self.loc_b,
+            product=self.product, quantity=Decimal('20'), tenant_id=TENANT_ID,
+        )
+        transfer.dispatch()
+        source_level = StockLevel.objects.get(product=self.product, location=self.loc_a)
+        self.assertEqual(source_level.quantity, Decimal('30'))
+        self.assertFalse(StockLevel.objects.filter(product=self.product, location=self.loc_b).exists())
+        transfer.refresh_from_db()
+        self.assertEqual(transfer.status, 'IN_TRANSIT')
+
+    def test_receive_credits_destination(self):
+        transfer = StockTransfer.objects.create(
+            company=self.company, from_branch=self.branch_a, to_branch=self.branch_b,
+            from_location=self.loc_a, to_location=self.loc_b,
+            product=self.product, quantity=Decimal('20'), tenant_id=TENANT_ID,
+        )
+        transfer.dispatch()
+        transfer.receive()
+        dest_level = StockLevel.objects.get(product=self.product, location=self.loc_b)
+        self.assertEqual(dest_level.quantity, Decimal('20'))
+        transfer.refresh_from_db()
+        self.assertEqual(transfer.status, 'COMPLETED')
+
+    def test_cannot_receive_before_dispatch(self):
+        from django.core.exceptions import ValidationError
+        transfer = StockTransfer.objects.create(
+            company=self.company, from_branch=self.branch_a, to_branch=self.branch_b,
+            from_location=self.loc_a, to_location=self.loc_b,
+            product=self.product, quantity=Decimal('20'), tenant_id=TENANT_ID,
+        )
+        with self.assertRaises(ValidationError):
+            transfer.receive()
+
+    def test_transfer_number_auto_generated(self):
+        transfer = StockTransfer.objects.create(
+            company=self.company, from_branch=self.branch_a, to_branch=self.branch_b,
+            from_location=self.loc_a, to_location=self.loc_b,
+            product=self.product, quantity=Decimal('5'), tenant_id=TENANT_ID,
+        )
+        self.assertTrue(transfer.transfer_number.startswith('TRF-'))
+
+    def test_dispatch_api_endpoint(self):
+        user = User.objects.create_user(username='trfuser', password='x', tenant_id=TENANT_ID)
+        import jwt, datetime
+        from django.conf import settings
+        payload = {
+            'user_id': str(user.id), 'username': user.username,
+            'tenant_id': TENANT_ID,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1),
+        }
+        token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}', HTTP_X_TENANT_ID=TENANT_ID)
+        transfer = StockTransfer.objects.create(
+            company=self.company, from_branch=self.branch_a, to_branch=self.branch_b,
+            from_location=self.loc_a, to_location=self.loc_b,
+            product=self.product, quantity=Decimal('10'), tenant_id=TENANT_ID,
+        )
+        res = client.post(f'/api/v1/inventory/transfers/{transfer.id}/dispatch/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['status'], 'IN_TRANSIT')
+        res2 = client.post(f'/api/v1/inventory/transfers/{transfer.id}/receive/')
+        self.assertEqual(res2.status_code, 200)
+        self.assertEqual(res2.json()['status'], 'COMPLETED')

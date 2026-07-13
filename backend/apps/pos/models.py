@@ -78,6 +78,14 @@ class PosOrder(BaseEntity):
     notes = models.TextField(blank=True)
     paid_at = models.DateTimeField(null=True, blank=True)
 
+    KITCHEN_STATUS = [
+        ('PENDING', 'Pending'),
+        ('IN_PROGRESS', 'In Progress'),
+        ('READY', 'Ready'),
+        ('SERVED', 'Served'),
+    ]
+    kitchen_status = models.CharField(max_length=20, choices=KITCHEN_STATUS, default='PENDING')
+
     class Meta:
         ordering = ['-created_at']
         unique_together = [('tenant_id', 'order_number')]
@@ -163,3 +171,46 @@ class PosReceipt(BaseEntity):
 
     def __str__(self):
         return self.receipt_number
+
+
+class Device(BaseEntity):
+    """
+    A registered fullscreen terminal/screen at a branch (POS terminal, kitchen display,
+    waiter handheld, customer-facing display, warehouse scanner, self-order kiosk).
+    Each device_type maps to a standalone Next.js route outside the manager shell.
+    """
+
+    DEVICE_TYPES = [
+        ('POS', 'POS Terminal'),
+        ('KDS', 'Kitchen Display'),
+        ('WAITER', 'Waiter Handheld'),
+        ('CUSTOMER_DISPLAY', 'Customer-Facing Display'),
+        ('WAREHOUSE_SCANNER', 'Warehouse Scanner'),
+        ('SELF_ORDER', 'Self-Order Kiosk'),
+    ]
+    ROUTE_BY_TYPE = {
+        'POS': '/pos-terminal',
+        'KDS': '/kds',
+        'WAITER': '/waiter',
+        'CUSTOMER_DISPLAY': '/customer-display',
+        'WAREHOUSE_SCANNER': '/warehouse-scanner',
+        'SELF_ORDER': '/self-order',
+    }
+
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='devices')
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='devices')
+    name = models.CharField(max_length=255)
+    code = models.CharField(max_length=50)
+    device_type = models.CharField(max_length=20, choices=DEVICE_TYPES)
+    last_seen_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['branch', 'device_type', 'name']
+        unique_together = [('tenant_id', 'company', 'code')]
+
+    @property
+    def route(self):
+        return self.ROUTE_BY_TYPE.get(self.device_type, '/')
+
+    def __str__(self):
+        return f"{self.name} ({self.get_device_type_display()} @ {self.branch})"

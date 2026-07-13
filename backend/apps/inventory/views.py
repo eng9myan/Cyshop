@@ -3,10 +3,11 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q, Sum
-from .models import Warehouse, StockLocation, StockLevel, StockMovement
+from django.core.exceptions import ValidationError
+from .models import Warehouse, StockLocation, StockLevel, StockMovement, StockTransfer
 from .serializers import (
     WarehouseSerializer, StockLocationSerializer,
-    StockLevelSerializer, StockMovementSerializer,
+    StockLevelSerializer, StockMovementSerializer, StockTransferSerializer,
 )
 
 
@@ -119,3 +120,43 @@ class StockMovementViewSet(viewsets.ModelViewSet):
 
     def partial_update(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
+
+
+class StockTransferViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = StockTransferSerializer
+
+    def get_queryset(self):
+        qs = StockTransfer.objects.filter(
+            tenant_id=self.request.tenant_id, is_deleted=False
+        )
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            qs = qs.filter(status=status_param)
+        branch = self.request.query_params.get('branch')
+        if branch:
+            qs = qs.filter(Q(from_branch=branch) | Q(to_branch=branch))
+        return qs.select_related(
+            'product', 'variant', 'from_branch', 'to_branch', 'from_location', 'to_location'
+        )
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    @action(detail=True, methods=['post'], url_path='dispatch')
+    def dispatch_transfer(self, request, pk=None):
+        transfer = self.get_object()
+        try:
+            transfer.dispatch(user=request.user)
+        except ValidationError as e:
+            return Response({'error': e.messages if hasattr(e, 'messages') else str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(self.get_serializer(transfer).data)
+
+    @action(detail=True, methods=['post'], url_path='receive')
+    def receive_transfer(self, request, pk=None):
+        transfer = self.get_object()
+        try:
+            transfer.receive(user=request.user)
+        except ValidationError as e:
+            return Response({'error': e.messages if hasattr(e, 'messages') else str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(self.get_serializer(transfer).data)

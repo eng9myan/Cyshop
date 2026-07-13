@@ -4,10 +4,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db import transaction
 from django.utils import timezone
-from .models import PosSession, PosOrder, PosOrderLine, PosPayment, PosReceipt
+from .models import PosSession, PosOrder, PosOrderLine, PosPayment, PosReceipt, Device
 from .serializers import (
     PosSessionSerializer, PosOrderSerializer, PosOrderListSerializer,
-    PosOrderLineSerializer, PosPaymentSerializer, PosReceiptSerializer,
+    PosOrderLineSerializer, PosPaymentSerializer, PosReceiptSerializer, DeviceSerializer,
 )
 
 
@@ -62,6 +62,10 @@ class PosOrderViewSet(viewsets.ModelViewSet):
             qs = qs.filter(session_id=v)
         if v := p.get('company'):
             qs = qs.filter(company_id=v)
+        if v := p.get('branch'):
+            qs = qs.filter(branch_id=v)
+        if v := p.get('kitchen_status'):
+            qs = qs.filter(kitchen_status=v)
         if v := p.get('source'):
             qs = qs.filter(source=v)
         if v := p.get('date_from'):
@@ -153,6 +157,16 @@ class PosOrderViewSet(viewsets.ModelViewSet):
         order.refresh_from_db()
         return Response(PosOrderSerializer(order, context={'request': request}).data)
 
+    @action(detail=True, methods=['post'], url_path='kitchen-status')
+    def set_kitchen_status(self, request, pk=None):
+        order = self.get_object()
+        new_status = request.data.get('kitchen_status')
+        if new_status not in dict(PosOrder.KITCHEN_STATUS):
+            return Response({'detail': 'Invalid kitchen_status.'}, status=status.HTTP_400_BAD_REQUEST)
+        order.kitchen_status = new_status
+        order.save(update_fields=['kitchen_status', 'updated_at', 'version'])
+        return Response(PosOrderSerializer(order, context={'request': request}).data)
+
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
         order = self.get_object()
@@ -187,3 +201,25 @@ class PosReceiptViewSet(viewsets.ReadOnlyModelViewSet):
         return PosReceipt.objects.filter(
             tenant_id=self.request.tenant_id, is_deleted=False
         ).select_related('order')
+
+
+class DeviceViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = DeviceSerializer
+
+    def get_queryset(self):
+        qs = Device.objects.filter(
+            tenant_id=self.request.tenant_id, is_deleted=False
+        ).select_related('company', 'branch')
+        if v := self.request.query_params.get('branch'):
+            qs = qs.filter(branch_id=v)
+        if v := self.request.query_params.get('device_type'):
+            qs = qs.filter(device_type=v)
+        return qs
+
+    @action(detail=True, methods=['post'])
+    def heartbeat(self, request, pk=None):
+        device = self.get_object()
+        device.last_seen_at = timezone.now()
+        device.save(update_fields=['last_seen_at', 'updated_at', 'version'])
+        return Response(self.get_serializer(device).data)

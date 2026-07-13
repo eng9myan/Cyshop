@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Warehouse, StockLocation, StockLevel, StockMovement
+from .models import Warehouse, StockLocation, StockLevel, StockMovement, StockTransfer
 
 
 class WarehouseSerializer(serializers.ModelSerializer):
@@ -63,4 +63,32 @@ class StockMovementSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data['tenant_id'] = self.context['request'].tenant_id
+        return super().create(validated_data)
+
+
+class StockTransferSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    from_branch_name = serializers.CharField(source='from_branch.name', read_only=True)
+    to_branch_name = serializers.CharField(source='to_branch.name', read_only=True)
+    from_location_code = serializers.CharField(source='from_location.code', read_only=True)
+    to_location_code = serializers.CharField(source='to_location.code', read_only=True)
+
+    class Meta:
+        model = StockTransfer
+        fields = '__all__'
+        read_only_fields = [
+            'id', 'transfer_number', 'status', 'dispatch_movement', 'receive_movement',
+            'dispatched_at', 'received_at', 'created_at', 'updated_at',
+        ]
+
+    def validate(self, data):
+        if data.get('quantity', 0) <= 0:
+            raise serializers.ValidationError({'quantity': 'Quantity must be positive.'})
+        if data.get('from_location') and data.get('to_location') and data['from_location'] == data['to_location']:
+            raise serializers.ValidationError('Source and destination locations must differ.')
+        return data
+
+    def create(self, validated_data):
+        validated_data['tenant_id'] = self.context['request'].tenant_id
+        validated_data['status'] = 'DRAFT'
         return super().create(validated_data)

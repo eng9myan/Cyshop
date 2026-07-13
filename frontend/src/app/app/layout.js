@@ -46,6 +46,7 @@ const NAV_GROUPS = [
     items: [
       { name: "Stock Levels", path: "/app/inventory", icon: Warehouse },
       { name: "Stock Movements", path: "/app/inventory/movements", icon: ArrowLeftRight },
+      { name: "Inter-Branch Transfers", path: "/app/inventory/transfers", icon: Truck },
     ],
   },
   {
@@ -67,6 +68,7 @@ const NAV_GROUPS = [
       { name: "Users", path: "/app/users", icon: Users },
       { name: "Roles & RBAC", path: "/app/roles", icon: ShieldAlert },
       { name: "System Settings", path: "/app/settings", icon: Settings },
+      { name: "Device Registry", path: "/app/settings/devices", icon: Monitor },
       { name: "My Profile", path: "/app/profile", icon: User },
     ],
   },

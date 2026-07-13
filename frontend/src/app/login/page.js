@@ -7,7 +7,7 @@ import { Eye, EyeOff, Sparkles, AlertCircle, ArrowRight, Play, Zap } from "lucid
 import Logo from "@/components/brand/Logo";
 import { Suspense } from "react";
 
-const DEMO = { subdomain: "", username: "m.alnsour@outlook.com", password: "Snake@1980@5674734@" };
+const DEMO = { subdomain: "", username: "m.alnsour@outlook.com", password: "12345678" };
 
 function LoginForm() {
   const router = useRouter();
@@ -124,7 +124,7 @@ function LoginForm() {
                 </div>
                 <div className="text-xs text-[var(--color-ink-muted)] space-y-0.5">
                   <div>Username: <code className="font-mono text-[var(--color-ink-soft)]">m.alnsour@outlook.com</code></div>
-                  <div>Password: <code className="font-mono text-[var(--color-ink-soft)]">Snake@1980@5674734@</code></div>
+                  <div>Password: <code className="font-mono text-[var(--color-ink-soft)]">12345678</code></div>
                 </div>
               </div>
               <button

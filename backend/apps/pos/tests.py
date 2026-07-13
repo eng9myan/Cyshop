@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from apps.tenants.models import Tenant, Company, Branch
 from apps.catalog.models import TaxClass, Product
-from .models import PosSession, PosOrder, PosOrderLine, PosPayment, PosReceipt
+from .models import PosSession, PosOrder, PosOrderLine, PosPayment, PosReceipt, Device
 
 User = get_user_model()
 TENANT_ID = '018f1a2b-3c4d-7e5f-0000-0c1d2e3f4a5b'
@@ -171,4 +171,81 @@ class PosOrderTests(TestCase):
             cashier=self.user, session=self.session,
         )
         res = self.client.post(f'/api/v1/pos/orders/{empty.id}/confirm/')
+        self.assertEqual(res.status_code, 400)
+
+
+class DeviceTests(TestCase):
+    def setUp(self):
+        self.tenant, self.company, self.branch = _setup_tenant()
+        self.user = User.objects.create_user(
+            username='devadmin', password='pass', tenant_id=TENANT_ID
+        )
+        self.client = _auth_client(self.user)
+
+    def test_register_device(self):
+        payload = {
+            'company': str(self.company.id),
+            'branch': str(self.branch.id),
+            'name': 'Kitchen Display 1',
+            'code': 'KDS-01',
+            'device_type': 'KDS',
+        }
+        res = self.client.post('/api/v1/pos/devices/', payload, format='json')
+        self.assertEqual(res.status_code, 201, res.json())
+        data = res.json()
+        self.assertEqual(data['route'], '/kds')
+        self.assertEqual(data['device_type_display'], 'Kitchen Display')
+
+    def test_heartbeat_updates_last_seen(self):
+        device = Device.objects.create(
+            company=self.company, branch=self.branch, tenant_id=TENANT_ID,
+            name='POS 1', code='POS-01', device_type='POS',
+        )
+        self.assertIsNone(device.last_seen_at)
+        res = self.client.post(f'/api/v1/pos/devices/{device.id}/heartbeat/')
+        self.assertEqual(res.status_code, 200, res.json())
+        self.assertIsNotNone(res.json()['last_seen_at'])
+
+    def test_device_code_unique_per_company(self):
+        from django.db import IntegrityError, transaction as db_transaction
+        Device.objects.create(
+            company=self.company, branch=self.branch, tenant_id=TENANT_ID,
+            name='POS 1', code='DUP', device_type='POS',
+        )
+        with self.assertRaises(IntegrityError):
+            with db_transaction.atomic():
+                Device.objects.create(
+                    company=self.company, branch=self.branch, tenant_id=TENANT_ID,
+                    name='POS 2', code='DUP', device_type='POS',
+                )
+
+
+class KitchenStatusTests(TestCase):
+    def setUp(self):
+        self.tenant, self.company, self.branch = _setup_tenant()
+        self.user = User.objects.create_user(
+            username='kdsuser', password='pass', tenant_id=TENANT_ID
+        )
+        self.client = _auth_client(self.user)
+        self.order = PosOrder.objects.create(
+            company=self.company, branch=self.branch, tenant_id=TENANT_ID,
+            cashier=self.user,
+        )
+
+    def test_default_kitchen_status_pending(self):
+        self.assertEqual(self.order.kitchen_status, 'PENDING')
+
+    def test_set_kitchen_status(self):
+        res = self.client.post(
+            f'/api/v1/pos/orders/{self.order.id}/kitchen-status/',
+            {'kitchen_status': 'READY'}, format='json',
+        )
+        self.assertEqual(res.status_code, 200, res.json())
+        self.assertEqual(res.json()['kitchen_status'], 'READY')
+
+    def test_invalid_kitchen_status_rejected(self):
+        res = self.client.post(
+            f'/api/v1/pos/orders/{self.order.id}/kitchen-status/',
+            {'kitchen_status': 'BOGUS'}, format='json',
+        )
         self.assertEqual(res.status_code, 400)

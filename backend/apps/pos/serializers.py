@@ -1,7 +1,7 @@
 from decimal import Decimal
 from rest_framework import serializers
 from django.db import transaction
-from .models import PosSession, PosOrder, PosOrderLine, PosPayment, PosReceipt
+from .models import PosSession, PosOrder, PosOrderLine, PosPayment, PosReceipt, Device
 from apps.catalog.models import Product, ProductVariant
 
 
@@ -91,7 +91,7 @@ class PosOrderListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'order_number', 'status', 'source', 'cashier_username',
             'customer_name', 'subtotal', 'tax_amount', 'discount_amount',
-            'total', 'line_count', 'paid_at', 'created_at',
+            'total', 'line_count', 'kitchen_status', 'table_ref', 'branch', 'paid_at', 'created_at',
         ]
 
     def get_cashier_username(self, obj):
@@ -120,7 +120,7 @@ class PosOrderSerializer(serializers.ModelSerializer):
         model = PosOrder
         fields = [
             'id', 'session', 'company', 'branch', 'cashier', 'cashier_username',
-            'order_number', 'source', 'status', 'customer_name', 'customer_phone',
+            'order_number', 'source', 'status', 'kitchen_status', 'customer_name', 'customer_phone',
             'table_ref', 'subtotal', 'discount_amount', 'tax_amount', 'total',
             'notes', 'paid_at', 'lines', 'lines_input', 'payments', 'receipt', 'created_at',
         ]
@@ -155,3 +155,22 @@ class PosOrderSerializer(serializers.ModelSerializer):
             if lines_input:
                 order.recalculate()
         return order
+
+
+class DeviceSerializer(serializers.ModelSerializer):
+    branch_name = serializers.CharField(source='branch.name', read_only=True)
+    device_type_display = serializers.CharField(source='get_device_type_display', read_only=True)
+    route = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Device
+        fields = [
+            'id', 'company', 'branch', 'branch_name', 'name', 'code',
+            'device_type', 'device_type_display', 'route', 'last_seen_at',
+            'is_active', 'created_at',
+        ]
+        read_only_fields = ['id', 'branch_name', 'device_type_display', 'route', 'last_seen_at', 'created_at']
+
+    def create(self, validated_data):
+        validated_data['tenant_id'] = self.context['request'].tenant_id
+        return super().create(validated_data)

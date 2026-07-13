@@ -159,3 +159,101 @@ class StockMovement(BaseEntity):
 
     def __str__(self):
         return f"{self.movement_type} {self.quantity} x {self.product.name} ({self.reference or self.id})"
+
+
+class StockTransfer(BaseEntity):
+    """
+    Two-phase inter-branch transfer: dispatch debits the source location immediately
+    (goods leave the source's stock), receive credits the destination once confirmed.
+    While IN_TRANSIT, the quantity exists in neither location's StockLevel — matching
+    the real-world state of goods on a truck between branches.
+    """
+
+    STATUS_CHOICES = [
+        ('DRAFT', 'Draft'),
+        ('IN_TRANSIT', 'In Transit'),
+        ('COMPLETED', 'Completed'),
+        ('CANCELLED', 'Cancelled'),
+    ]
+
+    transfer_number = models.CharField(max_length=50, blank=True, db_index=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='stock_transfers')
+    from_branch = models.ForeignKey(Branch, on_delete=models.PROTECT, related_name='transfers_out')
+    to_branch = models.ForeignKey(Branch, on_delete=models.PROTECT, related_name='transfers_in')
+    from_location = models.ForeignKey(StockLocation, on_delete=models.PROTECT, related_name='transfers_out')
+    to_location = models.ForeignKey(StockLocation, on_delete=models.PROTECT, related_name='transfers_in')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='stock_transfers')
+    variant = models.ForeignKey(
+        ProductVariant, on_delete=models.CASCADE, null=True, blank=True, related_name='stock_transfers'
+    )
+    quantity = models.DecimalField(max_digits=15, decimal_places=4)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
+    notes = models.TextField(blank=True)
+
+    dispatch_movement = models.OneToOneField(
+        StockMovement, on_delete=models.PROTECT, null=True, blank=True, related_name='transfer_dispatch'
+    )
+    receive_movement = models.OneToOneField(
+        StockMovement, on_delete=models.PROTECT, null=True, blank=True, related_name='transfer_receipt'
+    )
+    dispatched_at = models.DateTimeField(null=True, blank=True)
+    received_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = [('tenant_id', 'transfer_number')]
+
+    def clean(self):
+        if self.quantity <= 0:
+            raise ValidationError({'quantity': 'Quantity must be positive.'})
+        if self.from_location_id == self.to_location_id:
+            raise ValidationError('Source and destination locations must differ.')
+
+    def dispatch(self, user=None):
+        """Debit the source location and mark the transfer in transit."""
+        if self.status != 'DRAFT' or self.dispatch_movement_id:
+            raise ValidationError('Transfer already dispatched.')
+        movement = StockMovement.objects.create(
+            product=self.product, variant=self.variant,
+            from_location=self.from_location, to_location=None,
+            quantity=self.quantity, movement_type='ISSUE',
+            reference=self.transfer_number,
+            notes=f'Dispatch for transfer {self.transfer_number} to {self.to_branch}',
+            warehouse=self.from_location.warehouse,
+            tenant_id=self.tenant_id, created_by=user,
+        )
+        from django.utils import timezone
+        self.dispatch_movement = movement
+        self.dispatched_at = timezone.now()
+        self.status = 'IN_TRANSIT'
+        self.save(update_fields=['dispatch_movement', 'dispatched_at', 'status', 'updated_at', 'version'])
+
+    def receive(self, user=None):
+        """Credit the destination location and mark the transfer complete."""
+        if self.status != 'IN_TRANSIT' or self.receive_movement_id:
+            raise ValidationError('Transfer is not in transit.')
+        movement = StockMovement.objects.create(
+            product=self.product, variant=self.variant,
+            from_location=None, to_location=self.to_location,
+            quantity=self.quantity, movement_type='RECEIPT',
+            reference=self.transfer_number,
+            notes=f'Receipt for transfer {self.transfer_number} from {self.from_branch}',
+            warehouse=self.to_location.warehouse,
+            tenant_id=self.tenant_id, created_by=user,
+        )
+        from django.utils import timezone
+        self.receive_movement = movement
+        self.received_at = timezone.now()
+        self.status = 'COMPLETED'
+        self.save(update_fields=['receive_movement', 'received_at', 'status', 'updated_at', 'version'])
+
+    def save(self, *args, **kwargs):
+        if not self.transfer_number:
+            from django.utils import timezone as tz
+            prefix = tz.now().strftime('%Y%m%d')
+            self.transfer_number = f"TRF-{prefix}-{str(self.id)[:8].upper()}"
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.transfer_number} ({self.status}) {self.quantity} x {self.product.name}"
