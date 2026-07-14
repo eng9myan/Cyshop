@@ -3,7 +3,7 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from apps.tenants.models import Tenant, Company, Branch
-from apps.catalog.models import TaxClass, Product
+from apps.catalog.models import TaxClass, Product, KitComponent
 from .models import PosSession, PosOrder, PosOrderLine, PosPayment, PosReceipt, Device
 
 User = get_user_model()
@@ -172,6 +172,104 @@ class PosOrderTests(TestCase):
         )
         res = self.client.post(f'/api/v1/pos/orders/{empty.id}/confirm/')
         self.assertEqual(res.status_code, 400)
+
+
+class AutoDeKitTests(TestCase):
+    def setUp(self):
+        self.tenant, self.company, self.branch = _setup_tenant()
+        self.user = User.objects.create_user(
+            username='dekituser', password='pass', tenant_id=TENANT_ID
+        )
+        self.client = _auth_client(self.user)
+
+        from apps.inventory.models import Warehouse, StockLocation, StockMovement  # noqa: PLC0415
+        self.warehouse = Warehouse.objects.create(
+            company=self.company, branch=self.branch, tenant_id=TENANT_ID,
+            name='Main Warehouse', code='WH-MAIN',
+        )
+        self.location = StockLocation.objects.create(
+            warehouse=self.warehouse, tenant_id=TENANT_ID,
+            name='Shelf', code='SHELF', location_type='INTERNAL',
+        )
+
+        self.kit = Product.objects.create(
+            name='Burger Combo', internal_ref='KIT-001', company=self.company, tenant_id=TENANT_ID,
+            sell_price='9.99', cost_price='4.00', product_type='KIT',
+        )
+        self.bun = Product.objects.create(
+            name='Burger Bun', internal_ref='BUN-001', company=self.company, tenant_id=TENANT_ID,
+            sell_price='0.50', cost_price='0.20', product_type='STORABLE',
+        )
+        self.patty = Product.objects.create(
+            name='Beef Patty', internal_ref='PATTY-001', company=self.company, tenant_id=TENANT_ID,
+            sell_price='2.00', cost_price='1.00', product_type='STORABLE',
+        )
+        KitComponent.objects.create(
+            product=self.kit, component_product=self.bun, quantity_per_unit='1', tenant_id=TENANT_ID,
+        )
+        KitComponent.objects.create(
+            product=self.kit, component_product=self.patty, quantity_per_unit='2', tenant_id=TENANT_ID,
+        )
+
+        # Opening stock so the deduction has something to draw down from.
+        StockMovement.objects.create(
+            product=self.bun, to_location=self.location, quantity='50',
+            movement_type='OPENING', tenant_id=TENANT_ID,
+        )
+        StockMovement.objects.create(
+            product=self.patty, to_location=self.location, quantity='50',
+            movement_type='OPENING', tenant_id=TENANT_ID,
+        )
+
+        self.session = PosSession.objects.create(
+            company=self.company, branch=self.branch, cashier=self.user, tenant_id=TENANT_ID,
+        )
+
+    def test_paying_kit_order_deducts_components(self):
+        from apps.inventory.models import StockLevel  # noqa: PLC0415
+
+        order_payload = {
+            'company': str(self.company.id),
+            'branch': str(self.branch.id),
+            'session': str(self.session.id),
+            'lines_input': [{'product': str(self.kit.id), 'quantity': '3'}],
+        }
+        res = self.client.post('/api/v1/pos/orders/', order_payload, format='json')
+        self.assertEqual(res.status_code, 201, res.json())
+        order_id = res.json()['id']
+        total = res.json()['total']
+
+        pay_res = self.client.post(
+            f'/api/v1/pos/orders/{order_id}/pay/',
+            {'method': 'CASH', 'amount': total, 'change_given': '0'},
+            format='json',
+        )
+        self.assertEqual(pay_res.status_code, 200, pay_res.json())
+
+        # 3 combos x 1 bun each = 3 buns issued; 3 combos x 2 patties each = 6 patties issued.
+        bun_level = StockLevel.objects.get(product=self.bun, location=self.location)
+        patty_level = StockLevel.objects.get(product=self.patty, location=self.location)
+        self.assertEqual(bun_level.quantity, Decimal('47'))
+        self.assertEqual(patty_level.quantity, Decimal('44'))
+
+    def test_non_kit_order_does_not_deduct(self):
+        order_payload = {
+            'company': str(self.company.id),
+            'branch': str(self.branch.id),
+            'session': str(self.session.id),
+            'lines_input': [{'product': str(self.bun.id), 'quantity': '5'}],
+        }
+        res = self.client.post('/api/v1/pos/orders/', order_payload, format='json')
+        order_id = res.json()['id']
+        total = res.json()['total']
+        self.client.post(
+            f'/api/v1/pos/orders/{order_id}/pay/',
+            {'method': 'CASH', 'amount': total, 'change_given': '0'},
+            format='json',
+        )
+        from apps.inventory.models import StockLevel  # noqa: PLC0415
+        bun_level = StockLevel.objects.get(product=self.bun, location=self.location)
+        self.assertEqual(bun_level.quantity, Decimal('50'))
 
 
 class DeviceTests(TestCase):

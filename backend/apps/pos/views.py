@@ -1,3 +1,4 @@
+from decimal import Decimal
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -9,6 +10,42 @@ from .serializers import (
     PosSessionSerializer, PosOrderSerializer, PosOrderListSerializer,
     PosOrderLineSerializer, PosPaymentSerializer, PosReceiptSerializer, DeviceSerializer,
 )
+
+
+def _deduct_kit_components(order, user):
+    """
+    Auto de-kitting: for each KIT line on a paid order, issue stock for its
+    BOM components from the branch's first warehouse/location. Silently
+    skips lines whose branch has no warehouse configured yet — POS payment
+    must never fail because of missing inventory setup.
+    """
+    from apps.inventory.models import Warehouse, StockMovement  # noqa: PLC0415
+
+    warehouse = Warehouse.objects.filter(
+        tenant_id=order.tenant_id, company=order.company, branch=order.branch, is_deleted=False,
+    ).first()
+    if not warehouse:
+        return
+    location = warehouse.locations.filter(is_deleted=False, is_active=True).first()
+    if not location:
+        return
+
+    for line in order.lines.filter(is_deleted=False):
+        product = line.product
+        if product.product_type != 'KIT':
+            continue
+        for component in product.bom_components.filter(is_deleted=False, is_active=True):
+            StockMovement.objects.create(
+                product=component.component_product,
+                from_location=location,
+                quantity=(component.quantity_per_unit * line.quantity).quantize(Decimal('0.0001')),
+                movement_type='ISSUE',
+                reference=order.order_number,
+                notes=f"Auto de-kit: {product.name} x{line.quantity} (order {order.order_number})",
+                warehouse=warehouse,
+                tenant_id=order.tenant_id,
+                created_by=user,
+            )
 
 
 class PosSessionViewSet(viewsets.ModelViewSet):
@@ -148,6 +185,7 @@ class PosOrderViewSet(viewsets.ModelViewSet):
                 order.status = 'PAID'
                 order.paid_at = timezone.now()
                 order.save()
+                _deduct_kit_components(order, request.user)
                 receipt_num = f"REC-{timezone.now().strftime('%Y%m%d')}-{str(order.id)[:8].upper()}"
                 PosReceipt.objects.get_or_create(
                     order=order,

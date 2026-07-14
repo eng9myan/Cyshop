@@ -103,6 +103,35 @@ class Product(BaseEntity):
         return self.name
 
 
+class KitComponent(BaseEntity):
+    """
+    One raw-material line in a KIT product's bill of materials.
+    Selling `quantity` units of `product` (a KIT) consumes
+    `quantity_per_unit * quantity` units of `component_product`.
+    """
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='bom_components')
+    component_product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='used_in_kits')
+    quantity_per_unit = models.DecimalField(max_digits=15, decimal_places=4, default='1.0000')
+
+    class Meta:
+        ordering = ['component_product__name']
+        unique_together = [('product', 'component_product')]
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.product_id == self.component_product_id:
+            raise ValidationError('A product cannot be a component of itself.')
+        if self.quantity_per_unit <= 0:
+            raise ValidationError({'quantity_per_unit': 'Quantity per unit must be positive.'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.product.name} needs {self.quantity_per_unit} x {self.component_product.name}"
+
+
 class ProductVariant(BaseEntity):
     """Optional size/colour/SKU variants of a base Product."""
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variants')

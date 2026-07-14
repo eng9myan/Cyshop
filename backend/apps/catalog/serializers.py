@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category, ProductUnit, TaxClass, Product, ProductVariant
+from .models import Category, ProductUnit, TaxClass, Product, ProductVariant, KitComponent
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -51,8 +51,26 @@ class ProductVariantSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+class KitComponentSerializer(serializers.ModelSerializer):
+    component_product_name = serializers.CharField(source='component_product.name', read_only=True)
+    component_product_ref = serializers.CharField(source='component_product.internal_ref', read_only=True)
+
+    class Meta:
+        model = KitComponent
+        fields = [
+            'id', 'product', 'component_product', 'component_product_name',
+            'component_product_ref', 'quantity_per_unit', 'created_at',
+        ]
+        read_only_fields = ['id', 'product', 'component_product_name', 'component_product_ref', 'created_at']
+
+    def create(self, validated_data):
+        validated_data['tenant_id'] = self.context['request'].tenant_id
+        return super().create(validated_data)
+
+
 class ProductSerializer(serializers.ModelSerializer):
     variants = ProductVariantSerializer(many=True, read_only=True)
+    bom_components = KitComponentSerializer(many=True, read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
     unit_name = serializers.CharField(source='unit.abbreviation', read_only=True)
 

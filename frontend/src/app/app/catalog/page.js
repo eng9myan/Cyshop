@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Plus, Search, Package, Pencil, Trash2, X, ChevronDown,
-  BarChart2, Tag, RefreshCw, AlertTriangle, CheckCircle2,
+  BarChart2, Tag, RefreshCw, AlertTriangle, CheckCircle2, Boxes,
 } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -146,6 +146,114 @@ function ProductModal({ product, companies, categories, units, onSave, onClose }
   );
 }
 
+function BomModal({ product, allProducts, onClose, onToast }) {
+  const [components, setComponents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [componentProduct, setComponentProduct] = useState("");
+  const [qty, setQty] = useState("1");
+  const [saving, setSaving] = useState(false);
+
+  const candidates = allProducts.filter((p) => p.id !== product.id);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await api.get(`/api/v1/catalog/products/${product.id}/bom/`);
+      setComponents(Array.isArray(data) ? data : []);
+    } catch (err) {
+      onToast(null, err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [product.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const addComponent = async (e) => {
+    e.preventDefault();
+    if (!componentProduct) return;
+    setSaving(true);
+    try {
+      await api.post(`/api/v1/catalog/products/${product.id}/bom/`, {
+        component_product: componentProduct, quantity_per_unit: qty,
+      });
+      setComponentProduct(""); setQty("1");
+      load();
+    } catch (err) {
+      onToast(null, err.message);
+    } finally { setSaving(false); }
+  };
+
+  const removeComponent = async (id) => {
+    try {
+      await api.del(`/api/v1/catalog/kit-components/${id}/`);
+      setComponents((c) => c.filter((x) => x.id !== id));
+    } catch (err) {
+      onToast(null, err.message);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-[var(--color-line)] overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-line)]">
+          <h2 className="font-heading font-bold text-lg flex items-center gap-2">
+            <Boxes className="w-5 h-5 text-[#ED6C00]" /> Bill of Materials — {product.name}
+          </h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-[var(--color-surface-2)] flex items-center justify-center">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+          <p className="text-sm text-[var(--color-ink-muted)]">
+            Selling one unit of <strong>{product.name}</strong> auto-deducts these component quantities from stock on payment.
+          </p>
+
+          <div className="space-y-2">
+            {loading ? (
+              <div className="text-center py-6 text-sm text-[var(--color-ink-muted)]">Loading…</div>
+            ) : components.length === 0 ? (
+              <div className="text-center py-6 text-sm text-[var(--color-ink-muted)] border border-dashed border-[var(--color-line)] rounded-lg">
+                No components yet — add raw materials below.
+              </div>
+            ) : components.map((c) => (
+              <div key={c.id} className="flex items-center justify-between bg-[var(--color-surface)] border border-[var(--color-line)] rounded-lg px-3 py-2.5">
+                <div>
+                  <div className="text-sm font-semibold">{c.component_product_name}</div>
+                  <div className="text-xs text-[var(--color-ink-muted)] font-mono">{c.component_product_ref}</div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-bold tabular-nums">{parseFloat(c.quantity_per_unit)} / unit</span>
+                  <button onClick={() => removeComponent(c.id)} className="text-[var(--color-ink-muted)] hover:text-[#DC2626]">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <form onSubmit={addComponent} className="flex gap-2 items-end border-t border-[var(--color-line)] pt-4">
+            <div className="flex-1">
+              <label className="cy-label">Component Product</label>
+              <select required className="cy-input" value={componentProduct} onChange={(e) => setComponentProduct(e.target.value)}>
+                <option value="">— select —</option>
+                {candidates.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div className="w-28">
+              <label className="cy-label">Qty / unit</label>
+              <input type="number" step="0.0001" min="0.0001" required className="cy-input" value={qty} onChange={(e) => setQty(e.target.value)} />
+            </div>
+            <button type="submit" disabled={saving} className="cy-btn cy-btn-primary !py-2.5">
+              <Plus className="w-4 h-4" />
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CatalogPage() {
   const [products, setProducts] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -155,6 +263,7 @@ export default function CatalogPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("ALL");
   const [modal, setModal] = useState(null); // null | 'create' | product object
+  const [bomModal, setBomModal] = useState(null); // null | product object
   const [toast, setToast] = useState(null);
   const [deleting, setDeleting] = useState(null);
 
@@ -312,6 +421,15 @@ export default function CatalogPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
+                      {p.product_type === "KIT" && (
+                        <button
+                          onClick={() => setBomModal(p)}
+                          title="Bill of Materials"
+                          className="w-8 h-8 rounded-lg hover:bg-[var(--color-surface-2)] flex items-center justify-center text-[var(--color-ink-muted)] hover:text-[#ED6C00] transition"
+                        >
+                          <Boxes className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       <button
                         onClick={() => setModal(p)}
                         className="w-8 h-8 rounded-lg hover:bg-[var(--color-surface-2)] flex items-center justify-center text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition"
@@ -365,6 +483,14 @@ export default function CatalogPage() {
           units={units}
           onSave={handleSave}
           onClose={() => setModal(null)}
+        />
+      )}
+      {bomModal && (
+        <BomModal
+          product={bomModal}
+          allProducts={products}
+          onClose={() => setBomModal(null)}
+          onToast={(ok, err) => setToast(ok ? { msg: ok, ok: true } : { msg: err, ok: false })}
         />
       )}
       {toast && <Toast msg={toast.msg} ok={toast.ok} onDone={() => setToast(null)} />}

@@ -3,10 +3,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
-from .models import Category, ProductUnit, TaxClass, Product, ProductVariant
+from .models import Category, ProductUnit, TaxClass, Product, ProductVariant, KitComponent
 from .serializers import (
     CategorySerializer, ProductUnitSerializer, TaxClassSerializer,
-    ProductSerializer, ProductListSerializer, ProductVariantSerializer,
+    ProductSerializer, ProductListSerializer, ProductVariantSerializer, KitComponentSerializer,
 )
 
 
@@ -103,6 +103,18 @@ class ProductViewSet(viewsets.ModelViewSet):
         serializer.save(product=product)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    @action(detail=True, methods=['get', 'post'])
+    def bom(self, request, pk=None):
+        """List or add bill-of-materials lines for a KIT product."""
+        product = self.get_object()
+        if request.method == 'GET':
+            components = product.bom_components.filter(is_deleted=False, is_active=True)
+            return Response(KitComponentSerializer(components, many=True, context={'request': request}).data)
+        serializer = KitComponentSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save(product=product)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
 class ProductVariantViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -112,3 +124,16 @@ class ProductVariantViewSet(viewsets.ModelViewSet):
         return ProductVariant.objects.filter(
             tenant_id=self.request.tenant_id, is_deleted=False
         ).select_related('product')
+
+
+class KitComponentViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = KitComponentSerializer
+
+    def get_queryset(self):
+        qs = KitComponent.objects.filter(
+            tenant_id=self.request.tenant_id, is_deleted=False
+        ).select_related('product', 'component_product')
+        if v := self.request.query_params.get('product'):
+            qs = qs.filter(product_id=v)
+        return qs

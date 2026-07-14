@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from apps.tenants.models import Tenant, Company, Branch
-from .models import Category, ProductUnit, TaxClass, Product
+from .models import Category, ProductUnit, TaxClass, Product, KitComponent
 
 User = get_user_model()
 TENANT_ID = '018f1a2b-3c4d-7e5f-8a9b-0c1d2e3f4a5b'
@@ -112,3 +112,59 @@ class CatalogApiTests(TestCase):
             name='Hot Drinks', company=self.company, tenant_id=TENANT_ID,
         )
         self.assertEqual(cat.slug, 'hot-drinks')
+
+
+class KitComponentTests(TestCase):
+
+    def setUp(self):
+        self.tenant, self.company = _make_tenant_and_company()
+        self.user = User.objects.create_user(
+            username='kituser', password='pass', tenant_id=TENANT_ID
+        )
+        self.client = _auth_client(self.user)
+        self.kit = Product.objects.create(
+            name='Burger Combo', internal_ref='KIT-001', company=self.company, tenant_id=TENANT_ID,
+            sell_price='9.99', cost_price='4.00', product_type='KIT',
+        )
+        self.bun = Product.objects.create(
+            name='Burger Bun', internal_ref='BUN-001', company=self.company, tenant_id=TENANT_ID,
+            sell_price='0.50', cost_price='0.20', product_type='STORABLE',
+        )
+        self.patty = Product.objects.create(
+            name='Beef Patty', internal_ref='PATTY-001', company=self.company, tenant_id=TENANT_ID,
+            sell_price='2.00', cost_price='1.00', product_type='STORABLE',
+        )
+
+    def test_add_bom_component_via_api(self):
+        res = self.client.post(
+            f'/api/v1/catalog/products/{self.kit.id}/bom/',
+            {'component_product': str(self.bun.id), 'quantity_per_unit': '1'},
+            format='json',
+        )
+        self.assertEqual(res.status_code, 201, res.json())
+        self.assertEqual(res.json()['component_product_name'], 'Burger Bun')
+
+    def test_list_bom_components(self):
+        KitComponent.objects.create(
+            product=self.kit, component_product=self.bun, quantity_per_unit='1', tenant_id=TENANT_ID,
+        )
+        KitComponent.objects.create(
+            product=self.kit, component_product=self.patty, quantity_per_unit='2', tenant_id=TENANT_ID,
+        )
+        res = self.client.get(f'/api/v1/catalog/products/{self.kit.id}/bom/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.json()), 2)
+
+    def test_component_cannot_be_itself(self):
+        from django.core.exceptions import ValidationError
+        with self.assertRaises(ValidationError):
+            KitComponent.objects.create(
+                product=self.kit, component_product=self.kit, quantity_per_unit='1', tenant_id=TENANT_ID,
+            )
+
+    def test_quantity_must_be_positive(self):
+        from django.core.exceptions import ValidationError
+        with self.assertRaises(ValidationError):
+            KitComponent.objects.create(
+                product=self.kit, component_product=self.bun, quantity_per_unit='0', tenant_id=TENANT_ID,
+            )
