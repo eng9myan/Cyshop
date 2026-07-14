@@ -66,6 +66,8 @@ class TenantSettings(BaseEntity):
     language = models.CharField(max_length=10, default='ar') # ar, en
     subscription_tier = models.CharField(max_length=50, default='STARTER') # STARTER, GROWTH, BUSINESS, ENTERPRISE
     subscription_status = models.CharField(max_length=50, default='ACTIVE') # ACTIVE, SUSPENDED, TRIAL
+    onboarding_completed = models.BooleanField(default=False)
+    onboarding_step = models.PositiveSmallIntegerField(default=0)
 
     def __str__(self):
         return f"Settings for {self.tenant.name}"

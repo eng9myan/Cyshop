@@ -141,10 +141,16 @@ class Command(BaseCommand):
         """
         if not tenant:
             return
-        from apps.tenants.models import Company, Branch  # noqa: PLC0415
+        from apps.tenants.models import Company, Branch, TenantSettings  # noqa: PLC0415
         from apps.catalog.models import ProductUnit, TaxClass, Product  # noqa: PLC0415
         from apps.inventory.models import Warehouse, StockLocation, StockMovement  # noqa: PLC0415
         from apps.pos.models import Device  # noqa: PLC0415
+
+        settings_obj, _ = TenantSettings.objects.get_or_create(tenant=tenant)
+        if not settings_obj.onboarding_completed:
+            settings_obj.onboarding_completed = True
+            settings_obj.onboarding_step = 5
+            settings_obj.save(update_fields=['onboarding_completed', 'onboarding_step', 'updated_at', 'version'])
 
         company, _ = Company.objects.get_or_create(
             tenant_id=tenant.id, name="CyShop Demo Co", defaults={"country_code": "JO"},

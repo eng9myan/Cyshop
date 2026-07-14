@@ -9,6 +9,7 @@ import {
   Package, Warehouse, ArrowLeftRight, Tag, Monitor, Clock, Truck, Building2,
 } from "lucide-react";
 import Logo from "@/components/brand/Logo";
+import { api } from "@/lib/api";
 
 const NAV_GROUPS = [
   {
@@ -95,7 +96,18 @@ export default function AppLayout({ children }) {
     setTenantName(localStorage.getItem("tenant_name") || "Acme Tenant");
     setUsername(localStorage.getItem("username") || "Operator");
     fetchNotifications();
+    checkOnboarding();
   }, []);
+
+  const checkOnboarding = async () => {
+    try {
+      const res = await api.get("/api/v1/tenants/settings/");
+      const list = Array.isArray(res) ? res : res.results || [];
+      if (list[0] && !list[0].onboarding_completed) {
+        router.push("/onboarding");
+      }
+    } catch (_) {}
+  };
 
   const fetchNotifications = async () => {
     try {
